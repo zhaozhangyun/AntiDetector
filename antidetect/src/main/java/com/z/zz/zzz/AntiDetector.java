@@ -31,7 +31,7 @@ import java.util.UUID;
 
 public final class AntiDetector {
     public static final String TAG = "AntiDetector";
-    private static final String MANUFACTURER = "Google";
+    private static final String MANUFACTURER_GOOGLE = "Google";
     private static final String BRAND_GOOGLE = "google";
     private static final int FLAG_ANTI_DETECT = 0x1;
     private static final int FLAG_IS_GOOGLE_DEVICE = FLAG_ANTI_DETECT;          // 0
@@ -280,7 +280,7 @@ public final class AntiDetector {
     private boolean isGoogleDevice() {
         boolean result = false;
         try {
-            result = MANUFACTURER.toLowerCase().contains(Build.MANUFACTURER.toLowerCase()) ||
+            result = MANUFACTURER_GOOGLE.toLowerCase().contains(Build.MANUFACTURER.toLowerCase()) ||
                     BRAND_GOOGLE.toLowerCase().contains(Build.BRAND.toLowerCase());
             L.d(TAG, ">>> isGoogleDevice: " + result);
             if (result) {
