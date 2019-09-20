@@ -1,14 +1,18 @@
 package com.z.zz.zzz;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.provider.Settings;
+import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.z.zz.zzz.emu.EmulatorDetector;
+import com.z.zz.zzz.utils.L;
+import com.z.zz.zzz.utils.U;
 import com.z.zz.zzz.xml.WhiteListEntry;
 import com.z.zz.zzz.xml.WhiteListXmlParser;
 
@@ -28,7 +32,7 @@ import java.util.UUID;
 public final class AntiDetector {
     public static final String TAG = "AntiDetector";
     private static final String MANUFACTURER = "Google";
-    private static final String BRAND = "google";
+    private static final String BRAND_GOOGLE = "google";
     private static final int FLAG_ANTI_DETECT = 0x1;
     private static final int FLAG_IS_GOOGLE_DEVICE = FLAG_ANTI_DETECT;          // 0
     private static final int FLAG_ENABLE_ADB = FLAG_IS_GOOGLE_DEVICE << 1;      // 1
@@ -42,7 +46,6 @@ public final class AntiDetector {
     private static AntiDetector antiDetector;
     private Context context;
     private WhiteListXmlParser parser;
-    private boolean isDebug;
     private boolean isSticky;
 
     private AntiDetector(Context pContext) {
@@ -81,13 +84,27 @@ public final class AntiDetector {
                 Build.MODEL.length() % 10 + Build.PRODUCT.length() % 10 +
                 Build.TAGS.length() % 10 + Build.TYPE.length() % 10 +
                 Build.USER.length() % 10; //13 位
-        try {
-            serial = android.os.Build.class.getField("SERIAL").get(null).toString();
-            if (isDebug) Log.v(TAG, "Build.SERIAL: " + serial);
-            //API>=9 使用serial号
-            return new UUID(m_szDevIDShort.hashCode(), serial.hashCode()).toString();
-        } catch (Exception exception) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             serial = new AndroidID(context).getAndroidID();
+        } else {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {//9.0+
+                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE)
+                            == PackageManager.PERMISSION_GRANTED) {
+                        serial = Build.getSerial();
+                    }
+                } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N) {//8.0+
+                    serial = Build.SERIAL;
+                } else {//8.0-
+                    serial = U.getSystemProperties("ro.serialno");
+                }
+
+                L.v(TAG, "Build.SERIAL: " + serial);
+                //API>=9 使用serial号
+                return new UUID(m_szDevIDShort.hashCode(), serial.hashCode()).toString();
+            } catch (Exception e) {
+                serial = new AndroidID(context).getAndroidID();
+            }
         }
         //使用硬件信息拼凑出来的15位号码
         return new UUID(m_szDevIDShort.hashCode(), serial.hashCode()).toString();
@@ -110,7 +127,7 @@ public final class AntiDetector {
                 result = false;
             }
         } catch (Exception e) {
-            // ignored
+            e.printStackTrace();
         } finally {
             try {
                 if (os != null) {
@@ -122,7 +139,7 @@ public final class AntiDetector {
             }
         }
 
-        if (isDebug) Log.d(TAG, ">>> isRooted: " + result);
+        L.d(TAG, ">>> isRooted: " + result);
         if (result) {
             FLAG_SAFE |= FLAG_IS_ROOTED;
         }
@@ -131,7 +148,6 @@ public final class AntiDetector {
     }
 
     public AntiDetector setDebug(boolean isDebug) {
-        this.isDebug = isDebug;
         if (isDebug) {
             parser = new WhiteListXmlParser();
             parser.parse(context);
@@ -172,16 +188,16 @@ public final class AntiDetector {
             try {
                 if (parser != null) {
                     String androidId = new AndroidID(context).getAndroidID();
-                    if (isDebug) Log.v(TAG, "androidId: " + androidId);
+                    L.v(TAG, "androidId: " + androidId);
                     String serial = getUniquePsuedoID();
-                    if (isDebug) Log.v(TAG, "serial: " + serial);
+                    L.v(TAG, "serial: " + serial);
 
                     if (!TextUtils.isEmpty(serial)) {
                         Iterator<WhiteListEntry> it = parser.getPluginEntries().iterator();
                         while (it.hasNext()) {
                             String id = it.next().androidId;
                             if (serial.equals(id)) {
-                                Log.i(TAG, "The device [" + id + "] is in the white list.");
+                                L.i(TAG, "The device [" + id + "] is in the white list.");
                                 return false;
                             }
                         }
@@ -192,7 +208,7 @@ public final class AntiDetector {
                         while (it.hasNext()) {
                             String id = it.next().androidId;
                             if (androidId.equals(id)) {
-                                Log.i(TAG, "The device [" + id + "] is in the white list.");
+                                L.i(TAG, "The device [" + id + "] is in the white list.");
                                 return false;
                             }
                         }
@@ -228,9 +244,9 @@ public final class AntiDetector {
     }
 
     private boolean isDebugged() {
-        if (isDebug) Log.d(TAG, ">>> Debugger hasTracerPid: " + Debugger.hasTracerPid());
-        if (isDebug) Log.d(TAG, ">>> Debugger isBeingDebugged: " + Debugger.isBeingDebugged());
-        if (isDebug) Log.d(TAG, ">>> Debugger hasAdbInEmulator: " + Debugger.hasAdbInEmulator());
+        L.d(TAG, ">>> Debugger hasTracerPid: " + Debugger.hasTracerPid());
+        L.d(TAG, ">>> Debugger isBeingDebugged: " + Debugger.isBeingDebugged());
+        L.d(TAG, ">>> Debugger hasAdbInEmulator: " + Debugger.hasAdbInEmulator());
         boolean result = Debugger.hasTracerPid() || Debugger.isBeingDebugged() || Debugger.hasAdbInEmulator();
         if (result) {
             FLAG_SAFE |= FLAG_IS_DEBUGGED;
@@ -245,7 +261,7 @@ public final class AntiDetector {
     private boolean enableAdb() {
         boolean result = (Settings.Secure.getInt(context.getContentResolver(),
                 Settings.Secure.ADB_ENABLED, 0) > 0);
-        if (isDebug) Log.d(TAG, ">>> enableAdb: " + result);
+        L.d(TAG, ">>> enableAdb: " + result);
         if (result) {
             FLAG_SAFE |= FLAG_ENABLE_ADB;
         }
@@ -254,7 +270,7 @@ public final class AntiDetector {
 
     private boolean isDebuggable() {
         boolean result = 0 != (context.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE);
-        if (isDebug) Log.d(TAG, ">>> isDebuggable: " + result);
+        L.d(TAG, ">>> isDebuggable: " + result);
         if (result) {
             FLAG_SAFE |= FLAG_IS_DEBUGGABLE;
         }
@@ -265,8 +281,8 @@ public final class AntiDetector {
         boolean result = false;
         try {
             result = MANUFACTURER.toLowerCase().contains(Build.MANUFACTURER.toLowerCase()) ||
-                    BRAND.toLowerCase().contains(Build.BRAND.toLowerCase());
-            if (isDebug) Log.d(TAG, ">>> isGoogleDevice: " + result);
+                    BRAND_GOOGLE.toLowerCase().contains(Build.BRAND.toLowerCase());
+            L.d(TAG, ">>> isGoogleDevice: " + result);
             if (result) {
                 FLAG_SAFE |= FLAG_IS_GOOGLE_DEVICE;
             }
@@ -280,12 +296,9 @@ public final class AntiDetector {
         long start = System.currentTimeMillis();
         boolean isEmulator = EmulatorDetector.with(context)
                 .addPackageName("com.bluestacks")
-                .setDebug(isDebug)
                 .detect();
-        if (isDebug) {
-            Log.d(TAG, ">>> isEmulator cost " + (System.currentTimeMillis() - start) + "ms "
-                    + ": " + isEmulator + " >>> " + getCheckInfo());
-        }
+        L.d(TAG, ">>> isEmulator cost " + (System.currentTimeMillis() - start) + "ms "
+                + ": " + isEmulator + " >>> " + getCheckInfo());
         if (isEmulator) {
             FLAG_SAFE |= FLAG_IS_EMULATOR;
         }
@@ -318,7 +331,7 @@ public final class AntiDetector {
         }
 
         boolean result = (!TextUtils.isEmpty(proxyAddress)) && (proxyPort != -1);
-        if (isDebug) Log.d(TAG, ">>> isWifiProxy: " + result);
+        L.d(TAG, ">>> isWifiProxy: " + result);
         if (result) {
             FLAG_SAFE |= FLAG_IS_WIFI_PROXY;
         }
@@ -349,12 +362,12 @@ public final class AntiDetector {
 //
 //        for (int i = 0; i < networks.length; i++) {
 //            NetworkCapabilities caps = cm.getNetworkCapabilities(networks[i]);
-//            Log.i(TAG, "Network " + i + ": " + networks[i].toString());
-//            Log.i(TAG, "VPN transport is: " + caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN));
-//            Log.i(TAG, "NOT_VPN capability is: " + caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN));
+//            L.i(TAG, "Network " + i + ": " + networks[i].toString());
+//            L.i(TAG, "VPN transport is: " + caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN));
+//            L.i(TAG, "NOT_VPN capability is: " + caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN));
 //        }
 
-        if (isDebug) Log.d(TAG, ">>> isVPNConnected: " + result);
+        L.d(TAG, ">>> isVPNConnected: " + result);
         if (result) {
             FLAG_SAFE |= FLAG_IS_VPN_CONNECTED;
         }

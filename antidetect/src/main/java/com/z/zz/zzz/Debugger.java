@@ -6,6 +6,7 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Class used to determine functionality specific to the Android debuggers
@@ -68,7 +69,7 @@ class Debugger {
             // Skip column names
             reader.readLine();
 
-            ArrayList<tcp> tcpList = new ArrayList<tcp>();
+            List<tcp> tcpList = new ArrayList<>();
 
             while ((line = reader.readLine()) != null) {
                 tcpList.add(tcp.create(line.split("\\W+")));

@@ -7,23 +7,23 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Build;
-import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
-import android.util.Log;
 
-import org.json.JSONException;
+import com.z.zz.zzz.utils.L;
+import com.z.zz.zzz.utils.U;
+
 import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
 import static com.z.zz.zzz.AntiDetector.TAG;
+import static com.z.zz.zzz.utils.U.putJsonSafed;
 
 /**
  * Copyright 2016 Framgia, Inc.
@@ -96,8 +96,8 @@ public final class EmulatorDetector {
             new Property("qemu.hw.mainkeys", null),
             new Property("qemu.sf.fake_camera", null),
             new Property("qemu.sf.lcd_density", null),
-            new Property("ro.bootloader", "unknown"),
-            new Property("ro.bootmode", "unknown"),
+            new Property("ro.bootloader", Build.UNKNOWN),
+            new Property("ro.bootmode", Build.UNKNOWN),
             new Property("ro.hardware", "goldfish"),
             new Property("ro.kernel.android.qemud", null),
             new Property("ro.kernel.qemu.gles", null),
@@ -110,12 +110,11 @@ public final class EmulatorDetector {
     private static final String IP = "10.0.2.15";
     private static final int MIN_PROPERTIES_THRESHOLD = 0x5;
     private static EmulatorDetector mEmulatorDetector;
-    private static boolean isDebug = false;
+    private static JSONObject jsonDump;
     private final Context mContext;
     //    private boolean isTelephony = false;
     private boolean isCheckPackage = true;
     private List<String> mListPackageName = new ArrayList<>();
-    private static JSONObject jsonDump;
 
     private EmulatorDetector(Context pContext) {
         mContext = pContext;
@@ -144,7 +143,9 @@ public final class EmulatorDetector {
             putJsonSafed(jo, "HW", Build.HARDWARE);
             putJsonSafed(jo, "BL", Build.BOOTLOADER);
             putJsonSafed(jo, "FP", Build.FINGERPRINT);
-            putJsonSafed(jo, "SE", Build.SERIAL);
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+                putJsonSafed(jo, "SE", Build.SERIAL);
+            }
         } catch (Exception e) {
         }
 
@@ -158,42 +159,22 @@ public final class EmulatorDetector {
         return jsonDump.toString();
     }
 
-    public static JSONObject putJsonSafed(@NonNull JSONObject json, @NonNull String name, @NonNull Object value) {
-        try {
-            return json.put(name, value);
-        } catch (JSONException e) {
-        }
-
-        return json;
-    }
-
     static void log(String str) {
-        if (isDebug) {
-            Log.d(TAG, "Emu ---> " + str);
-        }
+        L.v(TAG, "Emu ---> " + str);
     }
 
-    public boolean isDebug() {
-        return isDebug;
+    public boolean isCheckPackage() {
+        return isCheckPackage;
     }
 
 //    public boolean isCheckTelephony() {
 //        return isTelephony;
 //    }
 
-    public EmulatorDetector setDebug(boolean isDebug) {
-        this.isDebug = isDebug;
-        return this;
-    }
-
 //    public EmulatorDetector setCheckTelephony(boolean telephony) {
 //        this.isTelephony = telephony;
 //        return this;
 //    }
-
-    public boolean isCheckPackage() {
-        return isCheckPackage;
-    }
 
     public EmulatorDetector setCheckPackage(boolean chkPackage) {
         this.isCheckPackage = chkPackage;
@@ -210,6 +191,10 @@ public final class EmulatorDetector {
         return this;
     }
 
+    public List<String> getPackageNameList() {
+        return mListPackageName;
+    }
+
 //    public void detect(final OnEmulatorDetectorListener pOnEmulatorDetectorListener) {
 //        new Thread(new Runnable() {
 //            @Override
@@ -223,10 +208,6 @@ public final class EmulatorDetector {
 //        }).start();
 //    }
 
-    public List<String> getPackageNameList() {
-        return mListPackageName;
-    }
-
     public boolean detect() {
         jsonDump = new JSONObject();
 
@@ -239,13 +220,7 @@ public final class EmulatorDetector {
         try {
             putJsonSafed(jsonDump, "emu_flag", formatBinaryString(flag));
         } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        // Check Basic
-        if (!result) {
-            result = checkBasic() || hasEmulatorBuild();
-            log(">>> Check Basic: " + result);
+            L.e(TAG, "detect error: ", e);
         }
 
         // Check Advanced
@@ -266,7 +241,7 @@ public final class EmulatorDetector {
     }
 
     private String formatBinaryString(int flag) {
-        StringBuilder builder = new StringBuilder();
+        StringBuilder pb = new StringBuilder();
         Stack<Character> stack = new Stack<>();
         String binStr = Integer.toBinaryString(flag);
         log("<<< binStr: " + binStr);
@@ -283,64 +258,9 @@ public final class EmulatorDetector {
             k++;
         }
         for (int i = 0; i < k; i++) {
-            builder.append(stack.pop());
+            pb.append(stack.pop());
         }
-        return builder.toString();
-    }
-
-    private boolean hasEmulatorBuild() {
-        String BOARD = Build.BOARD; // The name of the underlying board, like "unknown".
-        // This appears to occur often on real hardware... that's sad
-        // String BOOTLOADER = android.os.Build.BOOTLOADER; // The system bootloader version number.
-        String BRAND = Build.BRAND; // The brand (e.g., carrier) the software is customized for, if any.
-        // "generic"
-        String DEVICE = Build.DEVICE; // The name of the industrial design. "generic"
-        String HARDWARE = Build.HARDWARE; // The name of the hardware (from the kernel command line or
-        // /proc). "goldfish"
-        String MODEL = Build.MODEL; // The end-user-visible name for the end product. "sdk"
-        String PRODUCT = Build.PRODUCT; // The name of the overall product.
-        if ((BOARD.compareTo("unknown") == 0) /* || (BOOTLOADER.compareTo("unknown") == 0) */
-                || (BRAND.compareTo("generic") == 0) || (DEVICE.compareTo("generic") == 0)
-                || (MODEL.compareTo("sdk") == 0) || (PRODUCT.compareTo("sdk") == 0)
-                || (HARDWARE.compareTo("goldfish") == 0)) {
-            putJsonSafed(jsonDump, "emu_bld", true);
-            return true;
-        }
-        putJsonSafed(jsonDump, "emu_bld", false);
-        return false;
-    }
-
-    private boolean checkBasic() {
-        boolean result = Build.FINGERPRINT.startsWith("generic")
-                || Build.MODEL.contains("google_sdk")
-                || Build.MODEL.toLowerCase().contains("droid4x")
-                || Build.MODEL.contains("Emulator")
-                || Build.MODEL.contains("Android SDK built for x86")
-                || Build.MANUFACTURER.contains("Genymotion")
-                || Build.HARDWARE.equals("goldfish")
-                || Build.HARDWARE.equals("vbox86")
-                || Build.PRODUCT.equals("sdk")
-                || Build.PRODUCT.equals("google_sdk")
-                || Build.PRODUCT.equals("sdk_x86")
-                || Build.PRODUCT.equals("vbox86p")
-                || Build.BOARD.toLowerCase().contains("nox")
-                || Build.BOOTLOADER.toLowerCase().contains("nox")
-                || Build.HARDWARE.toLowerCase().contains("nox")
-                || Build.PRODUCT.toLowerCase().contains("nox")
-                || Build.SERIAL.toLowerCase().contains("nox");
-
-        if (result) {
-            putJsonSafed(jsonDump, "bas", result);
-            return true;
-        }
-        result |= Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic");
-        if (result) {
-            putJsonSafed(jsonDump, "bas", result);
-            return true;
-        }
-        result |= "google_sdk".equals(Build.PRODUCT);
-        putJsonSafed(jsonDump, "bas", result);
-        return result;
+        return pb.toString();
     }
 
     private boolean checkAdvanced() {
@@ -351,9 +271,30 @@ public final class EmulatorDetector {
                 || checkQEmuDrivers()
                 || checkFiles(PIPES, "Pipes")
                 || checkIp()
-                || (checkQEmuProps() && checkFiles(X86_FILES, "X86"));
+                || (checkQEmuProps() && checkFiles(X86_FILES, "x86"));
         putJsonSafed(jsonDump, "adv", result);
         return result;
+    }
+
+    private boolean checkPackageName() {
+        if (!isCheckPackage || mListPackageName.isEmpty()) {
+            putJsonSafed(jsonDump, "pkg", false);
+            return false;
+        }
+        final PackageManager packageManager = mContext.getPackageManager();
+        for (String pkgName : mListPackageName) {
+            Intent tryIntent = packageManager.getLaunchIntentForPackage(pkgName);
+            if (tryIntent != null) {
+                List<ResolveInfo> resolveInfos = packageManager.queryIntentActivities(
+                        tryIntent, PackageManager.MATCH_DEFAULT_ONLY);
+                if (!resolveInfos.isEmpty()) {
+                    putJsonSafed(jsonDump, "pkg", true);
+                    return true;
+                }
+            }
+        }
+        putJsonSafed(jsonDump, "pkg", false);
+        return false;
     }
 
 //    private boolean checkTelephony() {
@@ -423,36 +364,17 @@ public final class EmulatorDetector {
 //        return false;
 //    }
 
-    private boolean checkPackageName() {
-        if (!isCheckPackage || mListPackageName.isEmpty()) {
-            putJsonSafed(jsonDump, "pkg", false);
-            return false;
-        }
-        final PackageManager packageManager = mContext.getPackageManager();
-        for (final String pkgName : mListPackageName) {
-            final Intent tryIntent = packageManager.getLaunchIntentForPackage(pkgName);
-            if (tryIntent != null) {
-                final List<ResolveInfo> resolveInfos = packageManager.queryIntentActivities(tryIntent, PackageManager.MATCH_DEFAULT_ONLY);
-                if (!resolveInfos.isEmpty()) {
-                    putJsonSafed(jsonDump, "pkg", true);
-                    return true;
-                }
-            }
-        }
-        putJsonSafed(jsonDump, "pkg", false);
-        return false;
-    }
-
     private boolean checkQEmuDrivers() {
-        for (File drivers_file : new File[]{new File("/proc/tty/drivers"), new File("/proc/cpuinfo")}) {
+        for (File drivers_file : new File[]{new File("/proc/tty/drivers"),
+                new File("/proc/cpuinfo")}) {
             if (drivers_file.exists() && drivers_file.canRead()) {
                 byte[] data = new byte[1024];
                 try {
                     InputStream is = new FileInputStream(drivers_file);
                     is.read(data);
                     is.close();
-                } catch (Exception exception) {
-                    exception.printStackTrace();
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
 
                 String driver_data = new String(data);
@@ -464,14 +386,12 @@ public final class EmulatorDetector {
                 }
             }
         }
-
         return false;
     }
 
     private boolean checkFiles(String[] targets, String type) {
         for (String pipe : targets) {
-            File qemu_file = new File(pipe);
-            if (qemu_file.exists()) {
+            if (U.fileExist(pipe)) {
                 log(">>> Check " + type + " is detected");
                 return true;
             }
@@ -483,15 +403,13 @@ public final class EmulatorDetector {
         int found_props = 0;
 
         for (Property property : PROPERTIES) {
-            String property_value = getProp(mContext, property.name);
+            String property_value = U.getSystemProperties(property.name);
             if ((property.seek_value == null) && (property_value != null)) {
                 found_props++;
             }
-            if ((property.seek_value != null)
-                    && (property_value.contains(property.seek_value))) {
+            if ((property.seek_value != null) && (property_value.contains(property.seek_value))) {
                 found_props++;
             }
-
         }
 
         if (found_props >= MIN_PROPERTIES_THRESHOLD) {
@@ -506,22 +424,22 @@ public final class EmulatorDetector {
         if (ContextCompat.checkSelfPermission(mContext, Manifest.permission.INTERNET)
                 == PackageManager.PERMISSION_GRANTED) {
             String[] args = {"/system/bin/netcfg"};
-            StringBuilder stringBuilder = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
             try {
-                ProcessBuilder builder = new ProcessBuilder(args);
-                builder.directory(new File("/system/bin/"));
-                builder.redirectErrorStream(true);
-                Process process = builder.start();
+                ProcessBuilder pb = new ProcessBuilder(args);
+                pb.directory(new File("/system/bin/"));
+                pb.redirectErrorStream(true);
+                Process process = pb.start();
                 InputStream in = process.getInputStream();
                 byte[] re = new byte[1024];
                 while (in.read(re) != -1) {
-                    stringBuilder.append(new String(re));
+                    sb.append(new String(re));
                 }
                 in.close();
             } catch (Exception ex) {
             }
 
-            String netData = stringBuilder.toString();
+            String netData = sb.toString();
 
             if (!TextUtils.isEmpty(netData)) {
                 log(">>> netcfg data -> " + netData);
@@ -541,6 +459,10 @@ public final class EmulatorDetector {
         return ipDetected;
     }
 
+    public interface OnEmulatorDetectorListener {
+        void onResult(boolean isEmulator);
+    }
+
 //    private boolean isSupportTelePhony() {
 //        PackageManager packageManager = mContext.getPackageManager();
 //        boolean isSupport = packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY);
@@ -548,24 +470,14 @@ public final class EmulatorDetector {
 //        return isSupport;
 //    }
 
-    private String getProp(Context context, String property) {
-        try {
-            ClassLoader classLoader = context.getClassLoader();
-            Class<?> systemProperties = classLoader.loadClass("android.os.SystemProperties");
+    static class Property {
+        String name;
+        String seek_value;
 
-            Method get = systemProperties.getMethod("get", String.class);
-
-            Object[] params = new Object[1];
-            params[0] = property;
-
-            return (String) get.invoke(systemProperties, params);
-        } catch (Exception e) {
+        Property(String name, String seek_value) {
+            this.name = name;
+            this.seek_value = seek_value;
         }
-        return null;
-    }
-
-    public interface OnEmulatorDetectorListener {
-        void onResult(boolean isEmulator);
     }
 }
 
