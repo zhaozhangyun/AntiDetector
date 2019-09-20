@@ -48,10 +48,10 @@ final class EmulatorFinder {
     // 18. 设备信息
     // 19. 出厂信息
     // 20. 网络运营商信息
-    static int findEmulatorFeatureFlag(Context context) {
+    static long findEmulatorFeatureFlag(Context context) {
         sContext = context;
 
-        int flag = 0x0;
+        long flag = 0x0;
 
         if (!checkResolveDailAction(context)) {
             flag |= (0x1);
@@ -113,8 +113,6 @@ final class EmulatorFinder {
         if (!checkNetworkOperatorName(context)) {
             flag |= (0x1 << 19);
         }
-
-        log("findEmulatorFeatureFlag: " + flag);
 
         return flag;
     }

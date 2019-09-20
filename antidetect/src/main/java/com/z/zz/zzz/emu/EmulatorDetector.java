@@ -214,7 +214,7 @@ public final class EmulatorDetector {
         boolean result;
 
         // Check Emu flag
-        int flag = EmulatorFinder.findEmulatorFeatureFlag(mContext);
+        long flag = EmulatorFinder.findEmulatorFeatureFlag(mContext);
         result = flag != 0x0;
         log(">>> Find emulator feature flag: " + result);
         try {
@@ -240,10 +240,10 @@ public final class EmulatorDetector {
         return result;
     }
 
-    private String formatBinaryString(int flag) {
+    private String formatBinaryString(long flag) {
         StringBuilder pb = new StringBuilder();
         Stack<Character> stack = new Stack<>();
-        String binStr = Integer.toBinaryString(flag);
+        String binStr = Long.toBinaryString(flag);
         log("<<< binStr: " + binStr);
 
         CharSequence cs = binStr.subSequence(0, binStr.length());
