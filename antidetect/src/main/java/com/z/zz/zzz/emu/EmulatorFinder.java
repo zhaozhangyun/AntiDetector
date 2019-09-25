@@ -1,14 +1,11 @@
 package com.z.zz.zzz.emu;
 
-import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
-import android.support.v4.content.ContextCompat;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 
@@ -20,7 +17,7 @@ import java.io.FileReader;
 import java.io.InputStream;
 import java.util.List;
 
-import static com.z.zz.zzz.emu.EmulatorDetector.log;
+import static com.z.zz.zzz.emu.EmulatorDetector.jsonDump;
 
 final class EmulatorFinder {
     private static final String TAG = "EmulatorFinder";
@@ -48,69 +45,69 @@ final class EmulatorFinder {
     // 18. 设备信息
     // 19. 出厂信息
     // 20. 网络运营商信息
-    static long findEmulatorFeatureFlag(Context context) {
+    static long doCheckEmu(Context context) {
         sContext = context;
 
         long flag = 0x0;
 
-        if (!checkResolveDailAction(context)) {
+        if (checkResolveDialAction(context)) {
             flag |= (0x1);
         }
-        if (!checkBluetoothHardware()) {
+        if (checkBluetoothHardware()) {
             flag |= (0x1 << 1);
         }
-        if (!checkGPSHardware(context)) {
+        if (checkGPSHardware(context)) {
             flag |= (0x1 << 2);
         }
-        if (!checkMultiTouch(context)) {
+        if (checkMultiTouch(context)) {
             flag |= (0x1 << 3);
         }
-        if (!checkBatteryTemperature(context)) {
+        if (checkBatteryTemperature(context)) {
             flag |= (0x1 << 4);
         }
-        if (!checkBatteryVoltage(context)) {
+        if (checkBatteryVoltage(context)) {
             flag |= (0x1 << 5);
         }
-        if (!checkOriginSimulatorFeature()) {
+        if (checkOriginSimulatorFeature()) {
             flag |= (0x1 << 6);
         }
-        if (!checkHaimaSimulatorFeature()) {
+        if (checkHaimaSimulatorFeature()) {
             flag |= (0x1 << 7);
         }
-        if (!checkWenzhuoSimulatorFeature()) {
+        if (checkWenzhuoSimulatorFeature()) {
             flag |= (0x1 << 8);
         }
-        if (!checkXiaoyaoSimulatorFeature()) {
+        if (checkXiaoyaoSimulatorFeature()) {
             flag |= (0x1 << 9);
         }
-        if (!checkBlueStackSimulatorFeature()) {
+        if (checkBlueStackSimulatorFeature()) {
             flag |= (0x1 << 10);
         }
-        if (!checkYeshenSimulatorFeature()) {
+        if (checkYeshenSimulatorFeature()) {
             flag |= (0x1 << 11);
         }
-        if (!checkTiantianSimulatorFeature()) {
+        if (checkTiantianSimulatorFeature()) {
             flag |= (0x1 << 12);
         }
-        if (!checkVboxFeature()) {
+        if (checkVboxFeature()) {
             flag |= (0x1 << 13);
         }
-        if (!checkGenymotionFeature()) {
+        if (checkGenymotionFeature()) {
             flag |= (0x1 << 14);
         }
-        if (!checkQemuFeature()) {
+        if (checkQemuFeature()) {
             flag |= (0x1 << 15);
         }
-        if (!checkCpuInfo()) {
+        if (checkCpuInfo()) {
             flag |= (0x1 << 16);
         }
-        if (!checkDeviceInfo()) {
+        if (checkDeviceInfo()) {
             flag |= (0x1 << 17);
         }
-        if (!checkBuildProperty()) {
+        if (checkBuildProperty()) {
             flag |= (0x1 << 18);
         }
-        if (!checkNetworkOperatorName(context)) {
+        if (checkNetworkOperatorName(context)) {
             flag |= (0x1 << 19);
         }
 
@@ -118,16 +115,17 @@ final class EmulatorFinder {
     }
 
     // 1 是否能跳转拨号盘
-    private static boolean checkResolveDailAction(Context context) {
+    private static boolean checkResolveDialAction(Context context) {
         String url = "tel:" + "12345678910";
         Intent intent = new Intent();
         intent.setData(Uri.parse(url));
         intent.setAction(Intent.ACTION_DIAL);
         if (intent.resolveActivity(context.getPackageManager()) == null) {
-            L.w(TAG, "checkResolveDailAction failed --- Failed to resolve dial action");
-            return false;
+            L.w(TAG, "checkResolveDialAction failed --- Failed to resolve dial action");
+            U.putJsonSafed(jsonDump, "ck_dial", 1);
+            return true;
         }
-        return true;
+        return false;
     }
 
     // 2 是否有蓝牙硬件
@@ -138,9 +136,10 @@ final class EmulatorFinder {
                 && !U.fileExist("/system/lib/arm64/libbluetooth_jni.so")
                 && !U.fileExist("/system/vendor/lib64/libbluetooth_jni.so")) {
             L.w(TAG, "checkBluetoothHardware failed --- Not found libbluetooth_jni.so");
-            return false;
+            U.putJsonSafed(jsonDump, "ck_bt", 1);
+            return true;
         }
-        return true;
+        return false;
     }
 
     // 3 是否有GPS硬件
@@ -148,19 +147,22 @@ final class EmulatorFinder {
         LocationManager mgr = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         if (mgr == null) {
             L.w(TAG, "checkGPSHardware failed --- No LocationManager service");
-            return false;
+            U.putJsonSafed(jsonDump, "ck_gps", 1);
+            return true;
         }
         List<String> providers = mgr.getAllProviders();
         if (providers == null) {
             L.w(TAG, "checkGPSHardware failed --- No LocationManager providers");
-            return false;
+            U.putJsonSafed(jsonDump, "ck_gps", 1);
+            return true;
         }
         boolean containGPS = providers.contains(LocationManager.GPS_PROVIDER);
         if (!containGPS) {
             L.w(TAG, "checkGPSHardware failed --- No GPS provider");
-            return false;
+            U.putJsonSafed(jsonDump, "ck_gps", 1);
+            return true;
         }
-        return true;
+        return false;
     }
 
     // 4 是否支持多点触控
@@ -169,9 +171,10 @@ final class EmulatorFinder {
                 "android.hardware.touchscreen.multitouch");
         if (!hasFeature) {
             L.w(TAG, "checkMultiTouch failed --- No multitouch feature");
-            return false;
+            U.putJsonSafed(jsonDump, "ck_mt", 1);
+            return true;
         }
-        return true;
+        return false;
     }
 
     // 5 电池温度
@@ -180,16 +183,18 @@ final class EmulatorFinder {
                 new IntentFilter("android.intent.action.BATTERY_CHANGED"));
         if (batteryStatus == null) {
             L.w(TAG, "checkBatteryTemperature failed --- No BATTERY_CHANGED receiver");
-            return false;
+            U.putJsonSafed(jsonDump, "ck_temp", 1);
+            return true;
         }
         int temp = batteryStatus.getIntExtra("temperature", -999);
         if (temp == -999) {
             L.w(TAG, "checkBatteryTemperature failed --- temperature is -999");
-            return false;
+            U.putJsonSafed(jsonDump, "ck_temp", 1);
+            return true;
         } else if (temp > 0) {
             L.d(TAG, "Temperature is: " + U.tempToStr(((float) temp) / 10.0f, 1));
         }
-        return true;
+        return false;
     }
 
     // 6 电池电压
@@ -198,24 +203,32 @@ final class EmulatorFinder {
                 new IntentFilter("android.intent.action.BATTERY_CHANGED"));
         if (batteryStatus == null) {
             L.w(TAG, "checkBatteryVoltage failed --- No BATTERY_CHANGED receiver");
-            return false;
+            U.putJsonSafed(jsonDump, "ck_volt", 1);
+            return true;
         }
         int volt = batteryStatus.getIntExtra("voltage", -999);
         if (volt == -999) {
-            L.w(TAG, "checkBatteryVoltage voltage --- temperature is -999");
-            return false;
+            L.w(TAG, "checkBatteryVoltage failed --- voltage is -999");
+            U.putJsonSafed(jsonDump, "ck_volt", 1);
+            return true;
         } else if (volt > 0) {
             L.d(TAG, "Voltage is: " + volt);
         }
-        return true;
+        return false;
     }
 
     // 7 源生模拟器特征文件
     private static boolean checkOriginSimulatorFeature() {
-        if (U.fileExist("/system/bin/qemu_props")) {
-            return false;
+        String[] known_files = {"/system/lib/libc_malloc_debug_qemu.so", "/sys/qemu_trace",
+                "/system/bin/qemu-props", "/system/bin/qemu_props"};
+        for (String pipe : known_files) {
+            if (U.fileExist(pipe)) {
+                L.v(TAG, "checkOriginSimulatorFeature: " + pipe);
+                U.putJsonSafed(jsonDump, "ck_pipe", 1);
+                return true;
+            }
         }
-        return true;
+        return false;
     }
 
     // 8 海马模拟器特征文件
@@ -223,17 +236,19 @@ final class EmulatorFinder {
         if (U.fileExist("/system/lib/libdroid4x.so")
                 || U.fileExist("/system/bin/droid4x-prop")
                 || !TextUtils.isEmpty(U.getSystemProperties("init.svc.droid4x"))) {
-            return false;
+            U.putJsonSafed(jsonDump, "ck_droid4x", 1);
+            return true;
         }
-        return true;
+        return false;
     }
 
     // 9 文卓爷模拟器特征文件
     private static boolean checkWenzhuoSimulatorFeature() {
         if (U.fileExist("/system/bin/windroyed")) {
-            return false;
+            U.putJsonSafed(jsonDump, "ck_windroye", 1);
+            return true;
         }
-        return true;
+        return false;
     }
 
     // 10 逍遥模拟器特征文件
@@ -241,35 +256,39 @@ final class EmulatorFinder {
         if (U.fileExist("/system/bin/microvirt-prop")
                 || U.fileExist("/system/bin/microvirtd")
                 || !TextUtils.isEmpty(U.getSystemProperties("init.svc.microvirtd"))) {
-            return false;
+            U.putJsonSafed(jsonDump, "ck_microvirt", 1);
+            return true;
         }
-        return true;
+        return false;
     }
 
     // 11 BlueStack模拟器特征文件
     private static boolean checkBlueStackSimulatorFeature() {
         if (U.fileExist("/data/.bluestacks.prop")) {
-            return false;
+            U.putJsonSafed(jsonDump, "ck_bluestack", 1);
+            return true;
         }
-        return true;
+        return false;
     }
 
     // 12 夜神模拟器特征文件
     private static boolean checkYeshenSimulatorFeature() {
         if (U.fileExist("/system/bin/nox-prop")
                 || !TextUtils.isEmpty(U.getSystemProperties("init.svc.noxd"))) {
-            return false;
+            U.putJsonSafed(jsonDump, "ck_nox", 1);
+            return true;
         }
-        return true;
+        return false;
     }
 
     // 13 天天模拟器特征文件
     private static boolean checkTiantianSimulatorFeature() {
         if (U.fileExist("/system/bin/ttVM-prop")
                 || !TextUtils.isEmpty(U.getSystemProperties("init.svc.ttVM_x86-setup"))) {
-            return false;
+            U.putJsonSafed(jsonDump, "ck_ttvm", 1);
+            return true;
         }
-        return true;
+        return false;
     }
 
     // 14 Vbox特征
@@ -277,30 +296,29 @@ final class EmulatorFinder {
         if (!TextUtils.isEmpty(U.getSystemProperties("init.svc.vbox86-setup"))
                 || !TextUtils.isEmpty(U.getSystemProperties("androVM.vbox_dpi"))
                 || !TextUtils.isEmpty(U.getSystemProperties("androVM.vbox_graph_mode"))) {
-            return false;
+            U.putJsonSafed(jsonDump, "ck_vbox", 1);
+            return true;
         }
-        return true;
+        return false;
     }
 
     // 15 Genymotion特征
     private static boolean checkGenymotionFeature() {
         if (U.getSystemProperties("ro.product.manufacturer").contains("Genymotion")) {
-            return false;
+            U.putJsonSafed(jsonDump, "ck_genym", 1);
+            return true;
         }
-        return true;
+        return false;
     }
 
     // 16 Qemu特征
     private static boolean checkQemuFeature() {
-        try {
-            if (!TextUtils.isEmpty(U.getSystemProperties("init.svc.qemud"))
-                    || !TextUtils.isEmpty(U.getSystemProperties("ro.kernel.android.qemud"))) {
-                return false;
-            }
-        } catch (Exception e) {
-            L.e(TAG, "checkQemuFeature error: ", e);
+        if (!TextUtils.isEmpty(U.getSystemProperties("init.svc.qemud"))
+                || !TextUtils.isEmpty(U.getSystemProperties("ro.kernel.android.qemud"))) {
+            U.putJsonSafed(jsonDump, "ck_qemu", 1);
+            return true;
         }
-        return true;
+        return false;
     }
 
     // 17 CPU信息
@@ -314,10 +332,12 @@ final class EmulatorFinder {
                     || cpu.contains("AMD")
                     || cpu.toLowerCase().contains("intel")
                     || cpu.toLowerCase().contains("amd")) {
-                return false;
+                L.v(TAG, "checkCpuInfo: " + cpu);
+                U.putJsonSafed(jsonDump, "ck_cpu", 1);
+                return true;
             }
         }
-        return true;
+        return false;
     }
 
     // 18 设备版本
@@ -328,10 +348,12 @@ final class EmulatorFinder {
                     || device.toLowerCase().contains("tencent")
                     || device.toLowerCase().contains("ttvm")
                     || device.toLowerCase().contains("tiantian")) {
-                return false;
+                L.v(TAG, "checkDeviceInfo: " + device);
+                U.putJsonSafed(jsonDump, "ck_device", 1);
+                return true;
             }
         }
-        return true;
+        return false;
     }
 
     // 19 Build属性
@@ -343,7 +365,8 @@ final class EmulatorFinder {
                     || fingerprint.toLowerCase().contains("vbox")
                     || fingerprint.toLowerCase().contains("test-keys")) {
                 L.v(TAG, "Build.FINGERPRINT: " + fingerprint);
-                return false;
+                U.putJsonSafed(jsonDump, "ck_fp", 1);
+                return true;
             }
         }
 
@@ -357,16 +380,18 @@ final class EmulatorFinder {
                     || model.toLowerCase().contains("emulator")
                     || model.contains("Android SDK built for x86")) {
                 L.v(TAG, "Build.MODEL: " + model);
-                return false;
+                U.putJsonSafed(jsonDump, "ck_mo", 1);
+                return true;
             }
         }
 
         // MANUFACTURER
         String manufacturer = Build.MANUFACTURER;
         if (!TextUtils.isEmpty(manufacturer)) {
-            if (manufacturer.contains("Genymotion")) {
+            if (manufacturer.toLowerCase().contains("genymotion")) {
                 L.v(TAG, "Build.MANUFACTURER: " + manufacturer);
-                return false;
+                U.putJsonSafed(jsonDump, "ck_ma", 1);
+                return true;
             }
         }
 
@@ -376,7 +401,8 @@ final class EmulatorFinder {
             if (brand.startsWith("generic")
                     || brand.equalsIgnoreCase("generic")) {
                 L.v(TAG, "Build.BRAND: " + brand);
-                return false;
+                U.putJsonSafed(jsonDump, "ck_br", 1);
+                return true;
             }
         }
 
@@ -384,9 +410,11 @@ final class EmulatorFinder {
         String device = Build.DEVICE;
         if (!TextUtils.isEmpty(device)) {
             if (device.startsWith("generic")
-                    || device.equalsIgnoreCase("generic")) {
+                    || device.equalsIgnoreCase("generic")
+                    || device.toLowerCase().contains("vbox")) {
                 L.v(TAG, "Build.DEVICE: " + device);
-                return false;
+                U.putJsonSafed(jsonDump, "ck_de", 1);
+                return true;
             }
         }
 
@@ -397,7 +425,8 @@ final class EmulatorFinder {
                     || hardware.equalsIgnoreCase("vbox86")
                     || hardware.toLowerCase().contains("nox")) {
                 L.v(TAG, "Build.HARDWARE: " + hardware);
-                return false;
+                U.putJsonSafed(jsonDump, "ck_hw", 1);
+                return true;
             }
         }
 
@@ -405,12 +434,14 @@ final class EmulatorFinder {
         String product = Build.PRODUCT;
         if (!TextUtils.isEmpty(product)) {
             if (product.equalsIgnoreCase("sdk")
+                    || product.toLowerCase().contains("vbox")
                     || product.equalsIgnoreCase("google_sdk")
                     || product.equalsIgnoreCase("sdk_x86")
                     || product.equalsIgnoreCase("vbox86p")
                     || product.toLowerCase().contains("nox")) {
                 L.v(TAG, "Build.PRODUCT: " + product);
-                return false;
+                U.putJsonSafed(jsonDump, "ck_pr", 1);
+                return true;
             }
         }
 
@@ -420,55 +451,46 @@ final class EmulatorFinder {
             if (board.equalsIgnoreCase(Build.UNKNOWN)
                     || board.toLowerCase().contains("nox")) {
                 L.v(TAG, "Build.BOARD: " + board);
-                return false;
+                U.putJsonSafed(jsonDump, "ck_bo", 1);
+                return true;
             }
         }
 
         // BOOTLOADER
         String bootloader = Build.BOOTLOADER;
         if (!TextUtils.isEmpty(bootloader)) {
-            if (bootloader.equalsIgnoreCase(Build.UNKNOWN)
-                    || bootloader.toLowerCase().contains("nox")) {
+            if (/*bootloader.equalsIgnoreCase(Build.UNKNOWN)                // WTF!!!
+                    || */bootloader.toLowerCase().contains("nox")) {
                 L.v(TAG, "Build.BOOTLOADER: " + bootloader);
-                return false;
+                U.putJsonSafed(jsonDump, "ck_bl", 1);
+                return true;
             }
         }
 
         // SERIAL
-        String serial = "";
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {//9.0+
-            if (ContextCompat.checkSelfPermission(sContext, Manifest.permission.READ_PHONE_STATE)
-                    == PackageManager.PERMISSION_GRANTED) {
-                serial = Build.getSerial();
-            }
-        } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N) {//8.0+
-            serial = Build.SERIAL;
-        } else {//8.0-
-            serial = U.getSystemProperties("ro.serialno");
-        }
+        String serial = U.getBuildSerial(sContext);
         L.i(TAG, ">>> Build.SERIAL: " + serial + ", SDK_INT: " + Build.VERSION.SDK_INT);
         if (!TextUtils.isEmpty(serial)) {
             if (serial.equalsIgnoreCase("android")
                     || serial.toLowerCase().contains("nox")) {
                 L.v(TAG, "Build.SERIAL: " + serial);
-                return false;
+                U.putJsonSafed(jsonDump, "ck_se", 1);
+                return true;
             }
         }
-        return true;
+        return false;
     }
 
     // 20 检查网络运营商名称
     private static boolean checkNetworkOperatorName(Context context) {
-        try {
-            String networkOP = ((TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE))
-                    .getNetworkOperatorName();
-            if (networkOP.equalsIgnoreCase("android")) {
-                return false;
-            }
-        } catch (Exception e) {
-            L.e(TAG, "checkNetworkOperatorName error: ", e);
+        String networkOP = ((TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE))
+                .getNetworkOperatorName();
+        if (networkOP.equalsIgnoreCase("android")) {
+            L.v(TAG, "checkNetworkOperatorName: " + networkOP);
+            U.putJsonSafed(jsonDump, "ck_netop", 1);
+            return true;
         }
-        return true;
+        return false;
     }
 
 

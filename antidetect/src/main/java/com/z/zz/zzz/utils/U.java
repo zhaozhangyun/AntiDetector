@@ -1,5 +1,12 @@
 package com.z.zz.zzz.utils;
 
+import android.Manifest;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.os.Build;
+import android.support.v4.content.ContextCompat;
+import android.text.TextUtils;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -25,10 +32,11 @@ public class U {
             Class<?> c = Class.forName("android.os.SystemProperties");
             Method get = c.getMethod("get", String.class);
             value = (String) (get.invoke(c, key));
+            L.v(TAG, "getSystemProperties(" + key + "): " +
+                    (TextUtils.isEmpty(value) ? "n/a" : value));
         } catch (Exception e) {
             L.e(TAG, "getSystemProperties error: ", e);
         }
-        L.v(TAG, "getSystemProperties(" + key + "): " + value);
         return value;
     }
 
@@ -50,5 +58,21 @@ public class U {
         }
 
         return json;
+    }
+
+    public static String getBuildSerial(Context context) {
+        String serial = Build.UNKNOWN;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {//9.0+
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE)
+                    == PackageManager.PERMISSION_GRANTED) {
+                serial = Build.getSerial();
+            }
+        } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N) {//8.0+
+            serial = Build.SERIAL;
+        } else {//8.0-
+            serial = getSystemProperties("ro.serialno");
+        }
+
+        return TextUtils.isEmpty(serial) ? Build.UNKNOWN : serial;
     }
 }

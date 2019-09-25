@@ -20,8 +20,10 @@ import java.io.DataOutputStream;
 import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 
@@ -42,8 +44,9 @@ public final class AntiDetector {
     private static final int FLAG_IS_EMULATOR = FLAG_IS_ROOTED << 1;            // 5
     private static final int FLAG_IS_VPN_CONNECTED = FLAG_IS_EMULATOR << 1;     // 6
     private static final int FLAG_IS_WIFI_PROXY = FLAG_IS_VPN_CONNECTED << 1;   // 7
-    private static int FLAG_SAFE = 0x0;
-    private static AntiDetector antiDetector;
+    private static long FLAG_SAFE = 0x0;
+    private static AntiDetector sAntiDetector;
+    public Map<String, String> mData;
     private Context context;
     private WhiteListXmlParser parser;
     private boolean isSticky;
@@ -56,21 +59,25 @@ public final class AntiDetector {
         if (pContext == null) {
             throw new IllegalArgumentException("Context must not be null.");
         }
-        if (antiDetector == null) {
+        if (sAntiDetector == null) {
             synchronized (AntiDetector.class) {
-                if (antiDetector == null) {
-                    antiDetector = new AntiDetector(pContext.getApplicationContext());
+                if (sAntiDetector == null) {
+                    sAntiDetector = new AntiDetector(pContext.getApplicationContext());
                 }
             }
         }
-        return antiDetector;
+        return sAntiDetector;
+    }
+
+    public static AntiDetector getDefault() {
+        return sAntiDetector;
     }
 
     public static boolean getAntiResult() {
-        if (antiDetector == null) {
+        if (sAntiDetector == null) {
             throw new NullPointerException("The instance of AntiDetector is null");
         }
-        return antiDetector.checkAntiDetect();
+        return sAntiDetector.checkAntiDetect();
     }
 
     private String getUniquePsuedoID() {
@@ -88,18 +95,7 @@ public final class AntiDetector {
             serial = new AndroidID(context).getAndroidID();
         } else {
             try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {//9.0+
-                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE)
-                            == PackageManager.PERMISSION_GRANTED) {
-                        serial = Build.getSerial();
-                    }
-                } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N) {//8.0+
-                    serial = Build.SERIAL;
-                } else {//8.0-
-                    serial = U.getSystemProperties("ro.serialno");
-                }
-
-                L.v(TAG, "Build.SERIAL: " + serial);
+                serial = U.getBuildSerial(context);
                 //API>=9 使用serial号
                 return new UUID(m_szDevIDShort.hashCode(), serial.hashCode()).toString();
             } catch (Exception e) {
@@ -161,6 +157,8 @@ public final class AntiDetector {
     }
 
     public void detect(final OnDetectorListener listener) {
+        mData = new HashMap<>();
+
         new AsyncTask<Void, Void, Boolean>() {
             @Override
             protected Boolean doInBackground(Void... params) {
@@ -170,7 +168,8 @@ public final class AntiDetector {
             @Override
             protected void onPostExecute(Boolean result) {
                 if (listener != null) {
-                    listener.onResult(result, FLAG_SAFE);
+                    mData.put("emu_result_flag", Long.toBinaryString(FLAG_SAFE));
+                    listener.onResult(result, mData);
                 }
             }
         }.execute();
@@ -375,6 +374,6 @@ public final class AntiDetector {
     }
 
     public interface OnDetectorListener {
-        void onResult(boolean result, int flag);
+        void onResult(boolean result, Map<String, String> data);
     }
 }

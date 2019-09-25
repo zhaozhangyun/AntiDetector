@@ -10,6 +10,7 @@ import android.os.Build;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 
+import com.z.zz.zzz.AntiDetector;
 import com.z.zz.zzz.utils.L;
 import com.z.zz.zzz.utils.U;
 
@@ -20,10 +21,8 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Stack;
 
 import static com.z.zz.zzz.AntiDetector.TAG;
-import static com.z.zz.zzz.utils.U.putJsonSafed;
 
 /**
  * Copyright 2016 Framgia, Inc.
@@ -109,15 +108,15 @@ public final class EmulatorDetector {
     };
     private static final String IP = "10.0.2.15";
     private static final int MIN_PROPERTIES_THRESHOLD = 0x5;
+    static JSONObject jsonDump;
     private static EmulatorDetector mEmulatorDetector;
-    private static JSONObject jsonDump;
-    private final Context mContext;
+    private static Context sContext;
     //    private boolean isTelephony = false;
     private boolean isCheckPackage = true;
     private List<String> mListPackageName = new ArrayList<>();
 
     private EmulatorDetector(Context pContext) {
-        mContext = pContext;
+        sContext = pContext;
         mListPackageName.add("com.google.android.launcher.layouts.genymotion");
         mListPackageName.add("com.bluestacks");
         mListPackageName.add("com.bignox.app");
@@ -135,17 +134,16 @@ public final class EmulatorDetector {
     private static String dumpBuildInfo() {
         JSONObject jo = new JSONObject();
         try {
-            putJsonSafed(jo, "PD", Build.PRODUCT);
-            putJsonSafed(jo, "MA", Build.MANUFACTURER);
-            putJsonSafed(jo, "BR", Build.BRAND);
-            putJsonSafed(jo, "DE", Build.DEVICE);
-            putJsonSafed(jo, "MO", Build.MODEL);
-            putJsonSafed(jo, "HW", Build.HARDWARE);
-            putJsonSafed(jo, "BL", Build.BOOTLOADER);
-            putJsonSafed(jo, "FP", Build.FINGERPRINT);
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
-                putJsonSafed(jo, "SE", Build.SERIAL);
-            }
+            U.putJsonSafed(jo, "PR", Build.PRODUCT);
+            U.putJsonSafed(jo, "MA", Build.MANUFACTURER);
+            U.putJsonSafed(jo, "BR", Build.BRAND);
+            U.putJsonSafed(jo, "BO", Build.BOARD);
+            U.putJsonSafed(jo, "DE", Build.DEVICE);
+            U.putJsonSafed(jo, "MO", Build.MODEL);
+            U.putJsonSafed(jo, "HW", Build.HARDWARE);
+            U.putJsonSafed(jo, "BL", Build.BOOTLOADER);
+            U.putJsonSafed(jo, "FP", Build.FINGERPRINT);
+            U.putJsonSafed(jo, "SE", U.getBuildSerial(sContext));
         } catch (Exception e) {
         }
 
@@ -195,32 +193,17 @@ public final class EmulatorDetector {
         return mListPackageName;
     }
 
-//    public void detect(final OnEmulatorDetectorListener pOnEmulatorDetectorListener) {
-//        new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                boolean isEmulator = detect();
-//                log(">>> This System is Emulator: " + isEmulator);
-//                if (pOnEmulatorDetectorListener != null) {
-//                    pOnEmulatorDetectorListener.onResult(isEmulator);
-//                }
-//            }
-//        }).start();
-//    }
-
     public boolean detect() {
         jsonDump = new JSONObject();
 
         boolean result;
 
         // Check Emu flag
-        long flag = EmulatorFinder.findEmulatorFeatureFlag(mContext);
+        long flag = EmulatorFinder.doCheckEmu(sContext);
         result = flag != 0x0;
         log(">>> Find emulator feature flag: " + result);
-        try {
-            putJsonSafed(jsonDump, "emu_flag", formatBinaryString(flag));
-        } catch (Exception e) {
-            L.e(TAG, "detect error: ", e);
+        if (AntiDetector.getDefault().mData != null) {
+            AntiDetector.getDefault().mData.put("emu_flag", Long.toBinaryString(flag));
         }
 
         // Check Advanced
@@ -237,30 +220,11 @@ public final class EmulatorDetector {
 
         log(dumpBuildInfo());
 
+        if (AntiDetector.getDefault().mData != null) {
+            AntiDetector.getDefault().mData.put("emu_dump", jsonDump.toString());
+        }
+
         return result;
-    }
-
-    private String formatBinaryString(long flag) {
-        StringBuilder pb = new StringBuilder();
-        Stack<Character> stack = new Stack<>();
-        String binStr = Long.toBinaryString(flag);
-        log("<<< binStr: " + binStr);
-
-        CharSequence cs = binStr.subSequence(0, binStr.length());
-        int len = cs.length();
-        int k = 0;
-        for (int i = len; i > 0; i--) {
-            stack.add(cs.charAt(i - 1));
-            if ((len - i + 1) % 3 == 0) {
-                stack.add(',');
-                k++;
-            }
-            k++;
-        }
-        for (int i = 0; i < k; i++) {
-            pb.append(stack.pop());
-        }
-        return pb.toString();
     }
 
     private boolean checkAdvanced() {
@@ -272,33 +236,30 @@ public final class EmulatorDetector {
                 || checkFiles(PIPES, "Pipes")
                 || checkIp()
                 || (checkQEmuProps() && checkFiles(X86_FILES, "x86"));
-        putJsonSafed(jsonDump, "adv", result);
         return result;
     }
 
     private boolean checkPackageName() {
         if (!isCheckPackage || mListPackageName.isEmpty()) {
-            putJsonSafed(jsonDump, "pkg", false);
             return false;
         }
-        final PackageManager packageManager = mContext.getPackageManager();
+        final PackageManager packageManager = sContext.getPackageManager();
         for (String pkgName : mListPackageName) {
             Intent tryIntent = packageManager.getLaunchIntentForPackage(pkgName);
             if (tryIntent != null) {
                 List<ResolveInfo> resolveInfos = packageManager.queryIntentActivities(
                         tryIntent, PackageManager.MATCH_DEFAULT_ONLY);
                 if (!resolveInfos.isEmpty()) {
-                    putJsonSafed(jsonDump, "pkg", true);
+                    U.putJsonSafed(jsonDump, "ck_pkg", 1);
                     return true;
                 }
             }
         }
-        putJsonSafed(jsonDump, "pkg", false);
         return false;
     }
 
 //    private boolean checkTelephony() {
-//        if (ContextCompat.checkSelfPermission(mContext, Manifest.permission.READ_PHONE_STATE)
+//        if (ContextCompat.checkSelfPermission(sContext, Manifest.permission.READ_PHONE_STATE)
 //                == PackageManager.PERMISSION_GRANTED && this.isTelephony && isSupportTelePhony()) {
 //            return checkPhoneNumber()
 //                    || checkDeviceId()
@@ -310,7 +271,7 @@ public final class EmulatorDetector {
 //
 //    private boolean checkPhoneNumber() {
 //        TelephonyManager telephonyManager =
-//                (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
+//                (TelephonyManager) sContext.getSystemService(Context.TELEPHONY_SERVICE);
 //
 //        @SuppressLint("HardwareIds") String phoneNumber = telephonyManager.getLine1Number();
 //
@@ -326,7 +287,7 @@ public final class EmulatorDetector {
 //
 //    private boolean checkDeviceId() {
 //        TelephonyManager telephonyManager =
-//                (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
+//                (TelephonyManager) sContext.getSystemService(Context.TELEPHONY_SERVICE);
 //
 //        @SuppressLint("HardwareIds") String deviceId = telephonyManager.getDeviceId();
 //
@@ -342,7 +303,7 @@ public final class EmulatorDetector {
 //
 //    private boolean checkImsi() {
 //        TelephonyManager telephonyManager =
-//                (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
+//                (TelephonyManager) sContext.getSystemService(Context.TELEPHONY_SERVICE);
 //        @SuppressLint("HardwareIds") String imsi = telephonyManager.getSubscriberId();
 //
 //        for (String known_imsi : IMSI_IDS) {
@@ -356,7 +317,7 @@ public final class EmulatorDetector {
 //
 //    private boolean checkOperatorNameAndroid() {
 //        String operatorName = ((TelephonyManager)
-//                mContext.getSystemService(Context.TELEPHONY_SERVICE)).getNetworkOperatorName();
+//                sContext.getSystemService(Context.TELEPHONY_SERVICE)).getNetworkOperatorName();
 //        if (operatorName.equalsIgnoreCase("android")) {
 //            log("Check operator name android is detected");
 //            return true;
@@ -369,19 +330,25 @@ public final class EmulatorDetector {
                 new File("/proc/cpuinfo")}) {
             if (drivers_file.exists() && drivers_file.canRead()) {
                 byte[] data = new byte[1024];
+                InputStream is = null;
                 try {
-                    InputStream is = new FileInputStream(drivers_file);
+                    is = new FileInputStream(drivers_file);
                     is.read(data);
-                    is.close();
+
+                    String driver_data = new String(data);
+                    for (String known_qemu_driver : QEMU_DRIVERS) {
+                        if (driver_data.contains(known_qemu_driver)) {
+                            log(">>> Check QEmuDrivers is detected");
+                            U.putJsonSafed(jsonDump, "ck_qemu", known_qemu_driver);
+                            return true;
+                        }
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
-                }
-
-                String driver_data = new String(data);
-                for (String known_qemu_driver : QEMU_DRIVERS) {
-                    if (driver_data.contains(known_qemu_driver)) {
-                        log(">>> Check QEmuDrivers is detected");
-                        return true;
+                } finally {
+                    try {
+                        is.close();
+                    } catch (Exception e) {
                     }
                 }
             }
@@ -390,9 +357,11 @@ public final class EmulatorDetector {
     }
 
     private boolean checkFiles(String[] targets, String type) {
-        for (String pipe : targets) {
-            if (U.fileExist(pipe)) {
+        for (String file : targets) {
+            if (U.fileExist(file)) {
                 log(">>> Check " + type + " is detected");
+                L.v(TAG, "checkFiles: " + file);
+                U.putJsonSafed(jsonDump, "ck_pipe", 1);
                 return true;
             }
         }
@@ -404,24 +373,24 @@ public final class EmulatorDetector {
 
         for (Property property : PROPERTIES) {
             String property_value = U.getSystemProperties(property.name);
-            if ((property.seek_value == null) && (property_value != null)) {
+            if (TextUtils.isEmpty(property.seek_value) && !TextUtils.isEmpty(property_value)) {
                 found_props++;
             }
-            if ((property.seek_value != null) && (property_value.contains(property.seek_value))) {
+            if (!TextUtils.isEmpty(property.seek_value) && property_value.contains(property.seek_value)) {
                 found_props++;
             }
         }
 
         if (found_props >= MIN_PROPERTIES_THRESHOLD) {
             log(">>> Check QEmuProps is detected");
+            U.putJsonSafed(jsonDump, "ck_qemu_p", found_props);
             return true;
         }
         return false;
     }
 
     private boolean checkIp() {
-        boolean ipDetected = false;
-        if (ContextCompat.checkSelfPermission(mContext, Manifest.permission.INTERNET)
+        if (ContextCompat.checkSelfPermission(sContext, Manifest.permission.INTERNET)
                 == PackageManager.PERMISSION_GRANTED) {
             String[] args = {"/system/bin/netcfg"};
             StringBuilder sb = new StringBuilder();
@@ -448,23 +417,19 @@ public final class EmulatorDetector {
                 for (String lan : array) {
                     if ((lan.contains("wlan0") || lan.contains("tunl0") || lan.contains("eth0"))
                             && lan.contains(IP)) {
-                        ipDetected = true;
                         log(">>> Check IP is detected");
-                        break;
+                        U.putJsonSafed(jsonDump, "ck_ip", 1);
+                        return true;
                     }
                 }
 
             }
         }
-        return ipDetected;
-    }
-
-    public interface OnEmulatorDetectorListener {
-        void onResult(boolean isEmulator);
+        return false;
     }
 
 //    private boolean isSupportTelePhony() {
-//        PackageManager packageManager = mContext.getPackageManager();
+//        PackageManager packageManager = sContext.getPackageManager();
 //        boolean isSupport = packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY);
 //        log("Supported TelePhony: " + isSupport);
 //        return isSupport;
