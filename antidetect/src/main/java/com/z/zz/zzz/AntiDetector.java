@@ -168,7 +168,7 @@ public final class AntiDetector {
             @Override
             protected void onPostExecute(Boolean result) {
                 if (listener != null) {
-                    mData.put("emu_result_flag", Long.toBinaryString(FLAG_SAFE));
+                    mData.put("anti_flag", Long.toBinaryString(FLAG_SAFE));
                     listener.onResult(result, mData);
                 }
             }
