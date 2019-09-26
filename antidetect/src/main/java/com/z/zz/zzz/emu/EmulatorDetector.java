@@ -221,7 +221,7 @@ public final class EmulatorDetector {
         log(dumpBuildInfo());
 
         if (AntiDetector.getDefault().mData != null) {
-            AntiDetector.getDefault().mData.put("emu_dump", jsonDump.toString());
+            AntiDetector.getDefault().mData.put("snapshot", jsonDump.toString());
         }
 
         return result;
@@ -250,7 +250,7 @@ public final class EmulatorDetector {
                 List<ResolveInfo> resolveInfos = packageManager.queryIntentActivities(
                         tryIntent, PackageManager.MATCH_DEFAULT_ONLY);
                 if (!resolveInfos.isEmpty()) {
-                    U.putJsonSafed(jsonDump, "ck_pkg", 1);
+                    U.putJsonSafed(jsonDump, "pkg", 1);
                     return true;
                 }
             }
@@ -339,7 +339,7 @@ public final class EmulatorDetector {
                     for (String known_qemu_driver : QEMU_DRIVERS) {
                         if (driver_data.contains(known_qemu_driver)) {
                             log(">>> Check QEmuDrivers is detected");
-                            U.putJsonSafed(jsonDump, "ck_qemu", known_qemu_driver);
+                            U.putJsonSafed(jsonDump, "qemu", known_qemu_driver);
                             return true;
                         }
                     }
@@ -361,7 +361,7 @@ public final class EmulatorDetector {
             if (U.fileExist(file)) {
                 log(">>> Check " + type + " is detected");
                 L.v(TAG, "checkFiles: " + file);
-                U.putJsonSafed(jsonDump, "ck_pipe", 1);
+                U.putJsonSafed(jsonDump, "pipe", 1);
                 return true;
             }
         }
@@ -383,7 +383,7 @@ public final class EmulatorDetector {
 
         if (found_props >= MIN_PROPERTIES_THRESHOLD) {
             log(">>> Check QEmuProps is detected");
-            U.putJsonSafed(jsonDump, "ck_qemu_p", found_props);
+            U.putJsonSafed(jsonDump, "qemu_p", found_props);
             return true;
         }
         return false;
@@ -418,7 +418,7 @@ public final class EmulatorDetector {
                     if ((lan.contains("wlan0") || lan.contains("tunl0") || lan.contains("eth0"))
                             && lan.contains(IP)) {
                         log(">>> Check IP is detected");
-                        U.putJsonSafed(jsonDump, "ck_ip", 1);
+                        U.putJsonSafed(jsonDump, "ip", 1);
                         return true;
                     }
                 }

@@ -1,13 +1,10 @@
 package com.z.zz.zzz;
 
-import android.Manifest;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.provider.Settings;
-import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 
 import com.z.zz.zzz.emu.EmulatorDetector;
@@ -16,7 +13,15 @@ import com.z.zz.zzz.utils.U;
 import com.z.zz.zzz.xml.WhiteListEntry;
 import com.z.zz.zzz.xml.WhiteListXmlParser;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,13 +42,14 @@ public final class AntiDetector {
     private static final String BRAND_GOOGLE = "google";
     private static final int FLAG_ANTI_DETECT = 0x1;
     private static final int FLAG_IS_GOOGLE_DEVICE = FLAG_ANTI_DETECT;          // 0
-    private static final int FLAG_ENABLE_ADB = FLAG_IS_GOOGLE_DEVICE << 1;      // 1
-    private static final int FLAG_IS_DEBUGGABLE = FLAG_ENABLE_ADB << 1;         // 2
-    private static final int FLAG_IS_DEBUGGED = FLAG_IS_DEBUGGABLE << 1;        // 3
-    private static final int FLAG_IS_ROOTED = FLAG_IS_DEBUGGED << 1;            // 4
-    private static final int FLAG_IS_EMULATOR = FLAG_IS_ROOTED << 1;            // 5
-    private static final int FLAG_IS_VPN_CONNECTED = FLAG_IS_EMULATOR << 1;     // 6
-    private static final int FLAG_IS_WIFI_PROXY = FLAG_IS_VPN_CONNECTED << 1;   // 7
+    private static final int FLAG_IS_AOSP = FLAG_IS_GOOGLE_DEVICE << 1;         // 1
+    private static final int FLAG_ENABLE_ADB = FLAG_IS_AOSP << 1;               // 2
+    private static final int FLAG_IS_DEBUGGABLE = FLAG_ENABLE_ADB << 1;         // 3
+    private static final int FLAG_IS_DEBUGGED = FLAG_IS_DEBUGGABLE << 1;        // 4
+    private static final int FLAG_IS_ROOTED = FLAG_IS_DEBUGGED << 1;            // 5
+    private static final int FLAG_IS_EMULATOR = FLAG_IS_ROOTED << 1;            // 6
+    private static final int FLAG_IS_VPN_CONNECTED = FLAG_IS_EMULATOR << 1;     // 7
+    private static final int FLAG_IS_WIFI_PROXY = FLAG_IS_VPN_CONNECTED << 1;   // 8
     private static long FLAG_SAFE = 0x0;
     private static AntiDetector sAntiDetector;
     public Map<String, String> mData;
@@ -80,6 +86,132 @@ public final class AntiDetector {
         return sAntiDetector.checkAntiDetect();
     }
 
+    private boolean checkSuFile() {
+        Process process = null;
+        try {
+            String line = null;
+            //   /system/xbin/which 或者  /system/bin/which
+            process = Runtime.getRuntime().exec(new String[]{"which", "su"});
+            BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            if ((line = in.readLine()) != null) {
+                L.v(TAG, "checkSuFile(): " + line);
+                return true;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (process != null) process.destroy();
+        }
+        return false;
+    }
+
+    private boolean checkRootFile() {
+        File file = null;
+        String[] paths = {"/sbin/su", "/system/bin/su", "/system/xbin/su", "/data/local/xbin/su",
+                "/data/local/bin/su", "/system/sd/xbin/su", "/system/bin/failsafe/su",
+                "/data/local/su"};
+        for (String path : paths) {
+            file = new File(path);
+            if (file.exists()) {
+                L.v(TAG, "checkRootFile(): " + path);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean checkBusybox() {
+        try {
+            String[] strCmd = new String[]{"busybox", "df"};
+            List<String> execResult = executeCommand(strCmd);
+            if (execResult != null) {
+                L.v(TAG, "checkBusybox(): execResult=" + execResult);
+                return true;
+            }
+        } catch (Exception e) {
+            L.e(TAG, "Unexpected error - Here is what I know: ", e);
+        }
+        return false;
+    }
+
+    private List<String> executeCommand(String[] shellCmd) {
+        String line = null;
+        List<String> fullResponse = new ArrayList<>();
+        Process localProcess = null;
+        try {
+            L.v(TAG, "To shell exec which for find su :");
+            localProcess = Runtime.getRuntime().exec(shellCmd);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+        BufferedWriter out = new BufferedWriter(new OutputStreamWriter(localProcess.getOutputStream()));
+        BufferedReader in = new BufferedReader(new InputStreamReader(localProcess.getInputStream()));
+        try {
+            while ((line = in.readLine()) != null) {
+                L.v(TAG, "–> Line received: " + line);
+                fullResponse.add(line);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        L.v(TAG, "–> Full response was: " + fullResponse);
+        return fullResponse;
+    }
+
+    private boolean checkAccessRootData() {
+        try {
+            String fileContent = "test_ok";
+            Boolean writeFlag = writeFile("/data/su_test", fileContent);
+            if (writeFlag) {
+                L.v(TAG, "write ok");
+            } else {
+                L.v(TAG, "write failed");
+            }
+
+            String strRead = readFile("/data/su_test");
+            if (fileContent.equals(strRead)) {
+                L.v(TAG, "checkAccessRootData(): strRead=" + strRead);
+                return true;
+            }
+        } catch (Exception e) {
+            L.e(TAG, "Unexpected error - Here is what I know: ", e);
+        }
+        return false;
+    }
+
+    private Boolean writeFile(String fileName, String message) {
+        try {
+            FileOutputStream fout = new FileOutputStream(fileName);
+            byte[] bytes = message.getBytes();
+            fout.write(bytes);
+            fout.close();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    private String readFile(String fileName) {
+        File file = new File(fileName);
+        try {
+            FileInputStream fis = new FileInputStream(file);
+            byte[] bytes = new byte[1024];
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            int len;
+            while ((len = fis.read(bytes)) > 0) {
+                bos.write(bytes, 0, len);
+            }
+            String result = new String(bos.toByteArray());
+            L.v(TAG, "readFile(): " + result);
+            return result;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     private String getUniquePsuedoID() {
         String serial = null;
 
@@ -109,29 +241,47 @@ public final class AntiDetector {
     private boolean isRooted() {
         boolean result = false;
 
-        Process process = null;
-        DataOutputStream os = null;
-        try {
-            process = Runtime.getRuntime().exec("su");
-            os = new DataOutputStream(process.getOutputStream());
-            os.writeBytes("exit\n");
-            os.flush();
-            int exitValue = process.waitFor();
-            if (exitValue == 0) {
-                result = true;
-            } else {
-                result = false;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
+        if (checkSuFile()) {
+            result = true;
+        }
+
+        if (!result && checkRootFile()) {
+            result = true;
+        }
+
+        if (!result && checkBusybox()) {
+            result = true;
+        }
+
+        if (!result && checkAccessRootData()) {
+            result = true;
+        }
+
+        if (!result) {
+            Process process = null;
+            DataOutputStream os = null;
             try {
-                if (os != null) {
-                    os.close();
+                process = Runtime.getRuntime().exec("su");
+                os = new DataOutputStream(process.getOutputStream());
+                os.writeBytes("exit\n");
+                os.flush();
+                int exitValue = process.waitFor();
+                if (exitValue == 0) {
+                    result = true;
+                } else {
+                    result = false;
                 }
-                process.destroy();
             } catch (Exception e) {
                 e.printStackTrace();
+            } finally {
+                try {
+                    if (os != null) {
+                        os.close();
+                    }
+                    process.destroy();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
 
@@ -224,20 +374,23 @@ public final class AntiDetector {
                 boolean isVPNConnected = isVPNConnected();
                 boolean isWifiProxy = isWifiProxy();
                 boolean isGoogleDevice = isGoogleDevice();
+                boolean isAosp = isAosp();
 
                 return inDevelopmentMode
                         || isRooted
                         || isVPNConnected
                         || isWifiProxy
                         || isEmulator
-                        || isGoogleDevice;
+                        || isGoogleDevice
+                        || isAosp;
             } else {
                 return inDevelopmentMode()
                         || isRooted()
                         || isVPNConnected()
                         || isWifiProxy()
                         || isEmulator()
-                        || isGoogleDevice();
+                        || isGoogleDevice()
+                        || isAosp();
             }
         }
     }
@@ -279,11 +432,29 @@ public final class AntiDetector {
     private boolean isGoogleDevice() {
         boolean result = false;
         try {
-            result = MANUFACTURER_GOOGLE.toLowerCase().contains(Build.MANUFACTURER.toLowerCase()) ||
-                    BRAND_GOOGLE.toLowerCase().contains(Build.BRAND.toLowerCase());
+            result = Build.MANUFACTURER.toLowerCase().contains(MANUFACTURER_GOOGLE.toLowerCase())
+                    || BRAND_GOOGLE.toLowerCase().contains(Build.BRAND.toLowerCase())
+                    || Build.FINGERPRINT.toLowerCase().contains(BRAND_GOOGLE);
             L.d(TAG, ">>> isGoogleDevice: " + result);
             if (result) {
                 FLAG_SAFE |= FLAG_IS_GOOGLE_DEVICE;
+            }
+        } catch (Exception ignored) {
+        }
+
+        return result;
+    }
+
+    private boolean isAosp() {
+        boolean result = false;
+        try {
+            result = Build.MANUFACTURER.toLowerCase().contains(MANUFACTURER_GOOGLE.toLowerCase())
+                    || Build.PRODUCT.toLowerCase().contains("aosp")
+                    || Build.MODEL.toLowerCase().contains("aosp")
+                    || Build.FINGERPRINT.toLowerCase().contains("aosp");
+            L.d(TAG, ">>> isAosp: " + result);
+            if (result) {
+                FLAG_SAFE |= FLAG_IS_AOSP;
             }
         } catch (Exception ignored) {
         }
