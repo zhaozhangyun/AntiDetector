@@ -21,9 +21,8 @@ import static com.z.zz.zzz.emu.EmulatorDetector.jsonDump;
 
 final class EmulatorFinder {
     private static final String TAG = "EmulatorFinder";
-
+    private static final int BUILD_THRESHOLDS = 5;
     private static Context sContext;
-    private static final int BUILD_THRESHOLDS = 8;
 
     static long doCheckEmu(Context context) {
         sContext = context;
@@ -333,7 +332,7 @@ final class EmulatorFinder {
                     || cpu.contains("AMD")
                     || cpu.toLowerCase().contains("intel")
                     || cpu.toLowerCase().contains("amd")) {
-                L.v(TAG, "checkCpuInfo: " + cpu);
+                L.v(TAG, "checkCpuInfo(): " + cpu);
                 U.putJsonSafed(jsonDump, "cpu", 1);
                 return true;
             }
@@ -349,7 +348,7 @@ final class EmulatorFinder {
                     || device.toLowerCase().contains("tencent")
                     || device.toLowerCase().contains("ttvm")
                     || device.toLowerCase().contains("tiantian")) {
-                L.v(TAG, "checkDeviceInfo: " + device);
+                L.v(TAG, "checkDeviceInfo(): " + device);
                 U.putJsonSafed(jsonDump, "device", 1);
                 return true;
             }
@@ -364,7 +363,8 @@ final class EmulatorFinder {
         // FINGERPRINT
         String fingerprint = Build.FINGERPRINT;
         if (!TextUtils.isEmpty(fingerprint)) {
-            if (fingerprint.startsWith("generic")
+            if (fingerprint.toLowerCase().contains("generic")
+                    || fingerprint.toLowerCase().contains("x86")
                     || fingerprint.toLowerCase().contains("vbox")
                     || fingerprint.toLowerCase().contains("test-keys")) {
                 U.putJsonSafed(jsonDump, "fp", 1);
@@ -398,9 +398,8 @@ final class EmulatorFinder {
         // BRAND
         String brand = Build.BRAND;
         if (!TextUtils.isEmpty(brand)) {
-            if (brand.startsWith("generic")
-                    || brand.equalsIgnoreCase("generic")
-                    || brand.equalsIgnoreCase("android")) {
+            if (brand.toLowerCase().contains("generic")
+                    || brand.toLowerCase().contains("android")) {
                 U.putJsonSafed(jsonDump, "br", 1);
                 flags++;
             }
@@ -409,8 +408,7 @@ final class EmulatorFinder {
         // DEVICE
         String device = Build.DEVICE;
         if (!TextUtils.isEmpty(device)) {
-            if (device.startsWith("generic")
-                    || device.equalsIgnoreCase("generic")
+            if (device.toLowerCase().contains("generic")
                     || device.toLowerCase().contains("vbox")) {
                 U.putJsonSafed(jsonDump, "de", 1);
                 flags++;
@@ -431,7 +429,8 @@ final class EmulatorFinder {
         // PRODUCT
         String product = Build.PRODUCT;
         if (!TextUtils.isEmpty(product)) {
-            if (product.equalsIgnoreCase("sdk")
+            if (product.toLowerCase().contains("sdk")
+                    || product.toLowerCase().contains("x86")
                     || product.toLowerCase().contains("vbox")
                     || product.equalsIgnoreCase("google_sdk")
                     || product.equalsIgnoreCase("sdk_x86")
@@ -466,13 +465,13 @@ final class EmulatorFinder {
         String serial = U.getBuildSerial(sContext);
         L.i(TAG, ">>> Build.SERIAL: " + serial + ", SDK_INT: " + Build.VERSION.SDK_INT);
         if (!TextUtils.isEmpty(serial)) {
-            if (serial.equalsIgnoreCase("android")
-                    || serial.toLowerCase().contains("nox")) {
+            if (serial.toLowerCase().contains("android") || serial.toLowerCase().contains("nox")) {
                 U.putJsonSafed(jsonDump, "se", 1);
                 flags++;
             }
         }
 
+        L.v(TAG, "checkBuildProperty(): " + flags + " (thresholds: " + BUILD_THRESHOLDS + ")");
         if (flags >= BUILD_THRESHOLDS) {
             return true;
         }
@@ -485,7 +484,7 @@ final class EmulatorFinder {
         String networkOP = ((TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE))
                 .getNetworkOperatorName();
         if (networkOP.equalsIgnoreCase("android")) {
-            L.v(TAG, "checkNetworkOperatorName: " + networkOP);
+            L.v(TAG, "checkNetworkOperatorName(): " + networkOP);
             U.putJsonSafed(jsonDump, "netop", 1);
             return true;
         }
