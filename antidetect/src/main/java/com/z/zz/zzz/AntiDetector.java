@@ -42,14 +42,14 @@ public final class AntiDetector {
     private static final String BRAND_GOOGLE = "google";
     private static final int FLAG_ANTI_DETECT = 0x1;
     private static final int FLAG_IS_GOOGLE_DEVICE = FLAG_ANTI_DETECT;          // 0
-    private static final int FLAG_IS_AOSP = FLAG_IS_GOOGLE_DEVICE << 1;         // 1
-    private static final int FLAG_ENABLE_ADB = FLAG_IS_AOSP << 1;               // 2
-    private static final int FLAG_IS_DEBUGGABLE = FLAG_ENABLE_ADB << 1;         // 3
-    private static final int FLAG_IS_DEBUGGED = FLAG_IS_DEBUGGABLE << 1;        // 4
-    private static final int FLAG_IS_ROOTED = FLAG_IS_DEBUGGED << 1;            // 5
-    private static final int FLAG_IS_EMULATOR = FLAG_IS_ROOTED << 1;            // 6
-    private static final int FLAG_IS_VPN_CONNECTED = FLAG_IS_EMULATOR << 1;     // 7
-    private static final int FLAG_IS_WIFI_PROXY = FLAG_IS_VPN_CONNECTED << 1;   // 8
+    private static final int FLAG_ENABLE_ADB = FLAG_IS_GOOGLE_DEVICE << 1;      // 1
+    private static final int FLAG_IS_DEBUGGABLE = FLAG_ENABLE_ADB << 1;         // 2
+    private static final int FLAG_IS_DEBUGGED = FLAG_IS_DEBUGGABLE << 1;        // 3
+    private static final int FLAG_IS_ROOTED = FLAG_IS_DEBUGGED << 1;            // 4
+    private static final int FLAG_IS_EMULATOR = FLAG_IS_ROOTED << 1;            // 5
+    private static final int FLAG_IS_VPN_CONNECTED = FLAG_IS_EMULATOR << 1;     // 6
+    private static final int FLAG_IS_WIFI_PROXY = FLAG_IS_VPN_CONNECTED << 1;   // 7
+    private static final int FLAG_IS_AOSP = FLAG_IS_WIFI_PROXY << 1;            // 8
     private static long FLAG_SAFE = 0x0;
     private static AntiDetector sAntiDetector;
     public Map<String, String> mData;

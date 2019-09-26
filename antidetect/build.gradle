@@ -7,8 +7,8 @@ android {
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 28
-        versionCode 6
-        versionName "1.0.5"
+        versionCode 7
+        versionName "1.0.6"
     }
 
     buildTypes {
@@ -31,7 +31,7 @@ uploadArchives {
     repositories {
         mavenDeployer {
             repository(url: uri("./Upload-StatisticsSdk"))
-            pom.version = "1.0.5"
+            pom.version = "1.0.6"
             pom.artifactId = "antidetect"
             pom.groupId = "com.zizzy-nbb.lib"
             pom.name = "AntiDetector"
