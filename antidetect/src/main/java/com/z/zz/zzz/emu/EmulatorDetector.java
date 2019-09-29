@@ -3,7 +3,6 @@ package com.z.zz.zzz.emu;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.location.LocationManager;
@@ -97,12 +96,11 @@ public final class EmulatorDetector {
     };
     private static final String IP = "10.0.2.15";
     private static final int MIN_PROPERTIES_THRESHOLD = 0x5;
-    private static JSONObject jEmu;
-    private static EmulatorDetector mEmulatorDetector;
+    private static EmulatorDetector sEmulatorDetector;
     private static Context sContext;
-    private JSONObject jBuild;
+    private static JSONObject jBuild;
+    private static JSONObject jEmu;
     //    private boolean isTelephony = false;
-    private boolean isCheckPackage = true;
     private List<String> mListPackageName = new ArrayList<>();
 
     private EmulatorDetector(Context pContext) {
@@ -116,19 +114,20 @@ public final class EmulatorDetector {
         if (pContext == null) {
             throw new IllegalArgumentException("Context must not be null.");
         }
-        if (mEmulatorDetector == null)
-            mEmulatorDetector = new EmulatorDetector(pContext.getApplicationContext());
-        return mEmulatorDetector;
+        if (sEmulatorDetector == null)
+            sEmulatorDetector = new EmulatorDetector(pContext.getApplicationContext());
+        return sEmulatorDetector;
     }
 
     public static String dump() {
-        if (jEmu == null) {
-            return null;
-        }
-        return jEmu.toString();
+        JSONObject jo = new JSONObject();
+        U.putJsonSafed(jo, "build_info", getBuildInfo());
+        U.putJsonSafed(jo, "build_dump", jBuild);
+        U.putJsonSafed(jo, "emu_dump", jEmu);
+        return jo.toString();
     }
 
-    private String dumpBuildInfo() {
+    private static JSONObject getBuildInfo() {
         JSONObject jo = new JSONObject();
         try {
             U.putJsonSafed(jo, "PR", Build.PRODUCT);
@@ -144,7 +143,7 @@ public final class EmulatorDetector {
         } catch (Exception e) {
         }
 
-        return jo.toString();
+        return jo;
     }
 
     private void log(String str) {
@@ -158,7 +157,7 @@ public final class EmulatorDetector {
         intent.setData(Uri.parse(url));
         intent.setAction(Intent.ACTION_DIAL);
         if (intent.resolveActivity(context.getPackageManager()) == null) {
-            L.w(TAG, "checkResolveDialAction failed --- Failed to resolve dial action");
+            log("checkResolveDialAction failed --- Failed to resolve dial action");
             U.putJsonSafed(jEmu, "da", 1);
             return true;
         }
@@ -181,7 +180,7 @@ public final class EmulatorDetector {
                 && !U.fileExist("/system/lib64/libbluetooth_jni.so")
                 && !U.fileExist("/system/lib/arm64/libbluetooth_jni.so")
                 && !U.fileExist("/system/vendor/lib64/libbluetooth_jni.so")) {
-            L.w(TAG, "checkBluetoothHardware failed --- Not found libbluetooth_jni.so");
+            log("checkBluetoothHardware failed --- Not found libbluetooth_jni.so");
             U.putJsonSafed(jEmu, "bt", 1);
             return true;
         }
@@ -192,19 +191,19 @@ public final class EmulatorDetector {
     private boolean checkGPSHardware(Context context) {
         LocationManager mgr = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         if (mgr == null) {
-            L.w(TAG, "checkGPSHardware failed --- No LocationManager service");
+            log("checkGPSHardware failed --- No LocationManager service");
             U.putJsonSafed(jEmu, "gp", 1);
             return true;
         }
         List<String> providers = mgr.getAllProviders();
         if (providers == null) {
-            L.w(TAG, "checkGPSHardware failed --- No LocationManager providers");
+            log("checkGPSHardware failed --- No LocationManager providers");
             U.putJsonSafed(jEmu, "gp", 1);
             return true;
         }
         boolean containGPS = providers.contains(LocationManager.GPS_PROVIDER);
         if (!containGPS) {
-            L.w(TAG, "checkGPSHardware failed --- No GPS provider");
+            log("checkGPSHardware failed --- No GPS provider");
             U.putJsonSafed(jEmu, "gp", 1);
             return true;
         }
@@ -216,49 +215,9 @@ public final class EmulatorDetector {
         boolean hasFeature = context.getPackageManager().hasSystemFeature(
                 "android.hardware.touchscreen.multitouch");
         if (!hasFeature) {
-            L.w(TAG, "checkMultiTouch failed --- No multitouch feature");
+            log("checkMultiTouch failed --- No multitouch feature");
             U.putJsonSafed(jEmu, "mt", 1);
             return true;
-        }
-        return false;
-    }
-
-    // 电池温度
-    private boolean checkBatteryTemperature(Context context) {
-        Intent batteryStatus = context.registerReceiver(null,
-                new IntentFilter("android.intent.action.BATTERY_CHANGED"));
-        if (batteryStatus == null) {
-            L.w(TAG, "checkBatteryTemperature failed --- No BATTERY_CHANGED receiver");
-            U.putJsonSafed(jEmu, "te", 1);
-            return true;
-        }
-        int temp = batteryStatus.getIntExtra("temperature", -999);
-        if (temp == -999) {
-            L.w(TAG, "checkBatteryTemperature failed --- temperature is -999");
-            U.putJsonSafed(jEmu, "te", 1);
-            return true;
-        } else if (temp > 0) {
-            L.d(TAG, "Temperature is: " + U.tempToStr(((float) temp) / 10.0f, 1));
-        }
-        return false;
-    }
-
-    // 电池电压
-    private boolean checkBatteryVoltage(Context context) {
-        Intent batteryStatus = context.registerReceiver(null,
-                new IntentFilter("android.intent.action.BATTERY_CHANGED"));
-        if (batteryStatus == null) {
-            L.w(TAG, "checkBatteryVoltage failed --- No BATTERY_CHANGED receiver");
-            U.putJsonSafed(jEmu, "vo", 1);
-            return true;
-        }
-        int volt = batteryStatus.getIntExtra("voltage", -999);
-        if (volt == -999) {
-            L.w(TAG, "checkBatteryVoltage failed --- voltage is -999");
-            U.putJsonSafed(jEmu, "vo", 1);
-            return true;
-        } else if (volt > 0) {
-            L.d(TAG, "Voltage is: " + volt);
         }
         return false;
     }
@@ -269,7 +228,7 @@ public final class EmulatorDetector {
                 "/system/bin/qemu-props", "/system/bin/qemu_props"};
         for (String pipe : known_files) {
             if (U.fileExist(pipe)) {
-                L.v(TAG, "checkOriginEmuFeature: " + pipe);
+                log("checkOriginEmuFeature: " + pipe);
                 U.putJsonSafed(jEmu, "or", 1);
                 return true;
             }
@@ -361,7 +320,7 @@ public final class EmulatorDetector {
     private boolean checkQemuFeature() {
         if (!TextUtils.isEmpty(U.getSystemProperties("init.svc.qemud"))
                 || !TextUtils.isEmpty(U.getSystemProperties("ro.kernel.android.qemud"))) {
-            U.putJsonSafed(jEmu, "qe", 1);
+            U.putJsonSafed(jEmu, "qd", 1);
             return true;
         }
         return false;
@@ -378,7 +337,7 @@ public final class EmulatorDetector {
                     || cpu.contains("AMD")
                     || cpu.toLowerCase().contains("intel")
                     || cpu.toLowerCase().contains("amd")) {
-                L.v(TAG, "checkCpuInfo(): " + cpu);
+                log("checkCpuInfo(): " + cpu);
                 U.putJsonSafed(jEmu, "ci", 1);
                 return true;
             }
@@ -394,7 +353,7 @@ public final class EmulatorDetector {
                     || device.toLowerCase().contains("tencent")
                     || device.toLowerCase().contains("ttvm")
                     || device.toLowerCase().contains("tiantian")) {
-                L.v(TAG, "checkDeviceInfo(): " + device);
+                log("checkDeviceInfo(): " + device);
                 U.putJsonSafed(jEmu, "di", 1);
                 return true;
             }
@@ -407,7 +366,7 @@ public final class EmulatorDetector {
         String networkOP = ((TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE))
                 .getNetworkOperatorName();
         if (networkOP.equalsIgnoreCase("android")) {
-            L.v(TAG, "checkNetworkOperatorName(): " + networkOP);
+            log("checkNetworkOperatorName(): " + networkOP);
             U.putJsonSafed(jEmu, "no", 1);
             return true;
         }
@@ -563,8 +522,8 @@ public final class EmulatorDetector {
         // BOOTLOADER
         String bootloader = Build.BOOTLOADER;
         if (!TextUtils.isEmpty(bootloader)) {
-            if (bootloader.equalsIgnoreCase(Build.UNKNOWN)
-                    || bootloader.toLowerCase().contains("nox")) {
+            if (/*bootloader.equalsIgnoreCase(Build.UNKNOWN)
+                    || */bootloader.toLowerCase().contains("nox")) {
                 U.putJsonSafed(jBuild, "bl", 1);
                 flags++;
             }
@@ -574,16 +533,23 @@ public final class EmulatorDetector {
         String serial = U.getBuildSerial(sContext);
         L.i(TAG, ">>> Build.SERIAL: " + serial + ", SDK_INT: " + Build.VERSION.SDK_INT);
         if (!TextUtils.isEmpty(serial)) {
-            if (serial.toLowerCase().contains("android") || serial.toLowerCase().contains("nox")) {
+            if (serial.toLowerCase().contains("android")
+                    || serial.toLowerCase().contains("nox")
+                    || serial.toLowerCase().contains("emulator")) {
                 U.putJsonSafed(jBuild, "se", 1);
                 flags++;
             }
         }
 
+        log("checkBuildProperty(): " + flags + " (thresholds: " + MIN_BUILD_THRESHOLD + ")");
+        if (flags > 0) {
+            U.putJsonSafed(jBuild, "fl", flags);
+        }
+
         if (AntiDetector.getDefault().mData != null) {
             AntiDetector.getDefault().mData.put("emu_build", jBuild.toString());
         }
-        L.v(TAG, "checkBuildProperty(): " + flags + " (thresholds: " + MIN_BUILD_THRESHOLD + ")");
+
         if (flags >= MIN_BUILD_THRESHOLD) {
             U.putJsonSafed(jEmu, "bd", 1);
             return true;
@@ -591,35 +557,10 @@ public final class EmulatorDetector {
         return false;
     }
 
-    public boolean isCheckPackage() {
-        return isCheckPackage;
-    }
-
-    public EmulatorDetector setCheckPackage(boolean chkPackage) {
-        this.isCheckPackage = chkPackage;
-        return this;
-    }
-
-    public EmulatorDetector addPackageName(String pPackageName) {
-        this.mListPackageName.add(pPackageName);
-        return this;
-    }
-
-    public EmulatorDetector addPackageName(List<String> pListPackageName) {
-        this.mListPackageName.addAll(pListPackageName);
-        return this;
-    }
-
-    public List<String> getPackageNameList() {
-        return mListPackageName;
-    }
-
     public boolean detect() {
         jEmu = new JSONObject();
 
         boolean result = doCheckEmu(sContext);
-
-        log(dumpBuildInfo());
 
         if (AntiDetector.getDefault().mData != null) {
             AntiDetector.getDefault().mData.put("emu_snapshot", jEmu.toString());
@@ -644,12 +585,6 @@ public final class EmulatorDetector {
             flags++;
         }
         if (checkMultiTouch(context)) {
-            flags++;
-        }
-        if (checkBatteryTemperature(context)) {
-            flags++;
-        }
-        if (checkBatteryVoltage(context)) {
             flags++;
         }
         if (checkOriginEmuFeature()) {
@@ -698,7 +633,10 @@ public final class EmulatorDetector {
             flags++;
         }
 
-        L.v(TAG, "doCheckEmu(): " + flags + " (thresholds: " + MIN_BUILD_THRESHOLD + ")");
+        log("doCheckEmu(): " + flags + " (thresholds: " + MIN_BUILD_THRESHOLD + ")");
+        if (flags > 0) {
+            U.putJsonSafed(jEmu, "fl", flags);
+        }
         return flags >= MIN_EMU_FLAGS_THRESHOLD;
     }
 
@@ -718,15 +656,15 @@ public final class EmulatorDetector {
     }
 
     private boolean checkPackageName() {
-        if (!isCheckPackage || mListPackageName.isEmpty()) {
+        if (mListPackageName.isEmpty()) {
             return false;
         }
         PackageManager packageManager = sContext.getPackageManager();
         for (String pkgName : mListPackageName) {
             Intent tryIntent = packageManager.getLaunchIntentForPackage(pkgName);
             if (tryIntent != null) {
-                List<ResolveInfo> resolveInfos = packageManager.queryIntentActivities(
-                        tryIntent, PackageManager.MATCH_DEFAULT_ONLY);
+                List<ResolveInfo> resolveInfos = packageManager.queryIntentActivities(tryIntent,
+                        PackageManager.MATCH_DEFAULT_ONLY);
                 if (!resolveInfos.isEmpty()) {
                     U.putJsonSafed(jEmu, "pg", 1);
                     return true;
@@ -837,8 +775,7 @@ public final class EmulatorDetector {
     private boolean checkFiles(String[] targets, String type) {
         for (String file : targets) {
             if (U.fileExist(file)) {
-                log(">>> Check " + type + " is detected");
-                L.v(TAG, "checkFiles: " + file);
+                log(">>> Check[" + type + "] " + file + " is detected");
                 U.putJsonSafed(jEmu, "pi", 1);
                 return true;
             }

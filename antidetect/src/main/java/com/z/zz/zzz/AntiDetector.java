@@ -464,19 +464,13 @@ public final class AntiDetector {
 
     private boolean isEmulator() {
         long start = System.currentTimeMillis();
-        boolean isEmulator = EmulatorDetector.with(context)
-                .addPackageName("com.bluestacks")
-                .detect();
-        L.d(TAG, ">>> isEmulator cost " + (System.currentTimeMillis() - start) + "ms "
-                + ": " + isEmulator + " >>> " + getCheckInfo());
+        boolean isEmulator = EmulatorDetector.with(context).detect();
+        L.d(TAG, ">>> Check emulator cost " + (System.currentTimeMillis() - start) + "ms");
+        L.v(TAG, ">>> Emulator dump: " + EmulatorDetector.dump());
         if (isEmulator) {
             FLAG_SAFE |= FLAG_IS_EMULATOR;
         }
         return isEmulator;
-    }
-
-    private String getCheckInfo() {
-        return EmulatorDetector.dump();
     }
 
     /**
@@ -500,8 +494,7 @@ public final class AntiDetector {
             e.printStackTrace();
         }
 
-        boolean result = (!TextUtils.isEmpty(proxyAddress)) && (proxyPort != -1);
-        L.d(TAG, ">>> isWifiProxy: " + result);
+        boolean result = !TextUtils.isEmpty(proxyAddress) && (proxyPort != -1);
         if (result) {
             FLAG_SAFE |= FLAG_IS_WIFI_PROXY;
         }
@@ -537,7 +530,6 @@ public final class AntiDetector {
 //            L.i(TAG, "NOT_VPN capability is: " + caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN));
 //        }
 
-        L.d(TAG, ">>> isVPNConnected: " + result);
         if (result) {
             FLAG_SAFE |= FLAG_IS_VPN_CONNECTED;
         }
