@@ -645,8 +645,8 @@ public final class EmulatorDetector {
                 ||*/ checkFiles(GENY_FILES, "Geny")
                 || checkFiles(ANDY_FILES, "Andy")
                 || checkFiles(NOX_FILES, "Nox")
-                || checkQEmuDrivers()
                 || checkFiles(PIPES, "Pipes")
+                || checkQEmuDrivers()
                 || checkIp()
                 || (checkQEmuProps() && checkFiles(X86_FILES, "x86"));
         if (result) {
@@ -789,15 +789,16 @@ public final class EmulatorDetector {
         for (Property property : PROPERTIES) {
             String property_value = U.getSystemProperties(property.name);
             if (TextUtils.isEmpty(property.seek_value) && !TextUtils.isEmpty(property_value)) {
+                log(">>> Check " + property + " is detected");
                 found_props++;
             }
             if (!TextUtils.isEmpty(property.seek_value) && property_value.contains(property.seek_value)) {
+                log(">>> Check " + property + " is detected");
                 found_props++;
             }
         }
 
         if (found_props >= MIN_PROPERTIES_THRESHOLD) {
-            log(">>> Check QEmuProps is detected");
             U.putJsonSafed(jEmu, "qp", found_props);
             return true;
         }
@@ -857,6 +858,17 @@ public final class EmulatorDetector {
         Property(String name, String seek_value) {
             this.name = name;
             this.seek_value = seek_value;
+        }
+
+        @Override
+        public String toString() {
+            return new StringBuilder()
+                    .append("[")
+                    .append(name)
+                    .append(" : ")
+                    .append(seek_value)
+                    .append("]")
+                    .toString();
         }
     }
 }
