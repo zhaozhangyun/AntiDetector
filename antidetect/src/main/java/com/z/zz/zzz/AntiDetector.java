@@ -307,6 +307,9 @@ public final class AntiDetector {
     }
 
     public AntiDetector setMinEmuFlagsThresholds(int thresholds) {
+        if (thresholds < 3) {
+            throw new IllegalArgumentException("The emu flags thresholds must be >= 3");
+        }
         EmulatorDetector.MIN_EMU_FLAGS_THRESHOLD = thresholds;
         return this;
     }
