@@ -30,14 +30,11 @@ import static com.z.zz.zzz.AntiDetector.TAG;
 
 public final class EmulatorDetector {
 
-    private static final int MIN_EMU_FLAGS_THRESHOLD = 5;
-    private static final int MIN_BUILD_THRESHOLD = 5;
-
+    private static final int MIN_BUILD_THRESHOLD = 4;
     private static final String[] GENY_FILES = {
             "/dev/socket/genyd",
             "/dev/socket/baseband_genyd"
     };
-
     //    private static final String[] PHONE_NUMBERS = {
 //            "15555215554", "15555215556", "15555215558", "15555215560", "15555215562", "15555215564",
 //            "15555215566", "15555215568", "15555215570", "15555215572", "15555215574", "15555215576",
@@ -96,6 +93,7 @@ public final class EmulatorDetector {
     };
     private static final String IP = "10.0.2.15";
     private static final int MIN_PROPERTIES_THRESHOLD = 0x5;
+    public static int MIN_EMU_FLAGS_THRESHOLD = 4;
     private static EmulatorDetector sEmulatorDetector;
     private static Context sContext;
     private static JSONObject jBuild;
@@ -114,8 +112,9 @@ public final class EmulatorDetector {
         if (pContext == null) {
             throw new IllegalArgumentException("Context must not be null.");
         }
-        if (sEmulatorDetector == null)
+        if (sEmulatorDetector == null) {
             sEmulatorDetector = new EmulatorDetector(pContext.getApplicationContext());
+        }
         return sEmulatorDetector;
     }
 
@@ -633,7 +632,7 @@ public final class EmulatorDetector {
             flags++;
         }
 
-        log("doCheckEmu(): " + flags + " (thresholds: " + MIN_BUILD_THRESHOLD + ")");
+        log("doCheckEmu(): " + flags + " (thresholds: " + MIN_EMU_FLAGS_THRESHOLD + ")");
         if (flags > 0) {
             U.putJsonSafed(jEmu, "fl", flags);
         }

@@ -18,6 +18,7 @@ public class MainActivity extends AppCompatActivity {
         AntiDetector.create(this)
                 .setDebug(BuildConfig.DEBUG)
                 .setSticky(true)
+                .setMinEmuFlagsThresholds(4)
                 .detect(new AntiDetector.OnDetectorListener() {
                     @Override
                     public void onResult(boolean result, Map<String, String> data) {

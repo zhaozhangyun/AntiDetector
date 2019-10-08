@@ -306,6 +306,11 @@ public final class AntiDetector {
         return this;
     }
 
+    public AntiDetector setMinEmuFlagsThresholds(int thresholds) {
+        EmulatorDetector.MIN_EMU_FLAGS_THRESHOLD = thresholds;
+        return this;
+    }
+
     public void detect(final OnDetectorListener listener) {
         mData = new HashMap<>();
 
