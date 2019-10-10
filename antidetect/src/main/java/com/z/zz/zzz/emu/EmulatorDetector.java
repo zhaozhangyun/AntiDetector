@@ -25,8 +25,11 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static com.z.zz.zzz.AntiDetector.TAG;
 
@@ -126,11 +129,11 @@ public final class EmulatorDetector {
 
         MIN_EMU_FLAGS_THRESHOLD = U.getJsonSafed(jData, "min_emu_flags_threshold");
         MIN_BUILD_THRESHOLD = U.getJsonSafed(jData, "min_build_threshold");
-        IPs = parseJson(jData, "ips");
-        QEMU_DRIVERS = parseJson(jData, "qemu_drivers");
-        PIPES = parseJson(jData, "pipes");
-        X86_FILES = parseJson(jData, "x86_files");
-        EMU_FILES = parseJson(jData, "emu_files");
+        IPs = parseJsonToArray(jData, "ips");
+        QEMU_DRIVERS = parseJsonToArray(jData, "qemu_drivers");
+        PIPES = parseJsonToArray(jData, "pipes");
+        X86_FILES = parseJsonToArray(jData, "x86_files");
+        EMU_FILES = parseJsonToArray(jData, "emu_files");
 
         JSONArray jProperties = U.getJsonSafed(jData, "properties");
         PROPERTIES = new Property[jProperties.length()];
@@ -147,36 +150,54 @@ public final class EmulatorDetector {
 
         MIN_PROPERTIES_THRESHOLD = U.getJsonSafed(jData, "min_properties_threshold");
 
-        String[] packages = parseJson(jData, "packages");
+        String[] packages = parseJsonToArray(jData, "packages");
         mListPackageName = Arrays.asList(packages);
 
-        PHONE_NUMBERS = parseJson(jData, "phone_numbers");
-        DEVICE_IDS = parseJson(jData, "device_id");
-        IMSI_IDS = parseJson(jData, "imsi");
-        BLUETOOTH_PATH = parseJson(jData, "bluetooth_path");
+        PHONE_NUMBERS = parseJsonToArray(jData, "phone_numbers");
+        DEVICE_IDS = parseJsonToArray(jData, "device_id");
+        IMSI_IDS = parseJsonToArray(jData, "imsi");
+        BLUETOOTH_PATH = parseJsonToArray(jData, "bluetooth_path");
 
         JSONArray jEmuFeatures = U.getJsonSafed(jData, "emu_features");
         EMU_FEATURES = new EmuFeature[jEmuFeatures.length()];
         for (int i = 0; i < jEmuFeatures.length(); i++) {
             JSONObject jo = U.getJsonSafed(jEmuFeatures, i);
             String name = U.getJsonSafed(jo, "name");
-            String[] filePath = parseJson(jo, "file_path");
-            String[] systemProperties = parseJson(jo, "sys_prop");
-            EmuFeature ef = new EmuFeature(name, filePath, systemProperties);
+            String[] filePath = parseJsonToArray(jo, "file_path");
+            String[] systemProperties = parseJsonToArray(jo, "sys_prop");
+            Map<String, String> buildProperties = parseJsonToMap(jo, "build_prop");
+            EmuFeature ef = new EmuFeature(name, filePath, systemProperties, buildProperties);
             EMU_FEATURES[i] = ef;
         }
         log("@@@@@@@@@@@ Parse emu_pattern.json finished.");
     }
 
-    private String[] parseJson(JSONObject jo, String name) {
-        log("call parseJson(): name=" + name);
-        JSONArray ja = U.getJsonSafed(jo, name);
+    private String[] parseJsonToArray(JSONObject data, String name) {
+        log("call parseJsonToArray(): name=" + name);
+        JSONArray ja = U.getJsonSafed(data, name);
         String[] content = new String[ja.length()];
         for (int i = 0; i < ja.length(); i++) {
             content[i] = U.getJsonSafed(ja, i);
             log("   -- value: " + content[i]);
         }
         return content;
+    }
+
+    private Map<String, String> parseJsonToMap(JSONObject data, String name) {
+        log("call parseJsonToMap(): name=" + name);
+        Map<String, String> result = new HashMap<>();
+        JSONArray ja = U.getJsonSafed(data, name);
+        for (int i = 0; i < ja.length(); i++) {
+            JSONObject jo = U.getJsonSafed(ja, i);
+            Iterator<String> it = jo.keys();
+            while (it.hasNext()) {
+                String key = it.next();
+                String value = U.getJsonSafed(jo, key);
+                result.put(key, value);
+                log("   -- value: " + result);
+            }
+        }
+        return result;
     }
 
     private void log(String str) {
@@ -250,6 +271,7 @@ public final class EmulatorDetector {
             String name = ef.name;
             String[] filePath = ef.filePath;
             String[] systemProperties = ef.systemProperties;
+            Map<String, String> buildProperties = ef.buildProperties;
 
             for (String path : filePath) {
                 if (U.fileExist(path)) {
@@ -262,6 +284,19 @@ public final class EmulatorDetector {
                 if (!TextUtils.isEmpty(U.getSystemProperties(sysProp))) {
                     U.putJsonSafed(jEmu, name, 1);
                     return true;
+                }
+            }
+
+            Set<String> set = buildProperties.keySet();
+            Iterator<String> it = set.iterator();
+            while (it.hasNext()) {
+                String key = it.next();
+                String value = buildProperties.get(key);
+                if (!TextUtils.isEmpty(key) && !TextUtils.isEmpty(value)) {
+                    if (U.getSystemProperties(key).toLowerCase().contains(value.toLowerCase())) {
+                        U.putJsonSafed(jEmu, name, 1);
+                        return true;
+                    }
                 }
             }
         }
@@ -949,11 +984,13 @@ public final class EmulatorDetector {
         String name;
         String[] filePath;
         String[] systemProperties;
+        Map<String, String> buildProperties;
 
-        EmuFeature(String name, String[] filePath, String[] systemProperties) {
+        EmuFeature(String name, String[] filePath, String[] systemProperties, Map<String, String> buildProperties) {
             this.name = name;
             this.filePath = filePath;
             this.systemProperties = systemProperties;
+            this.buildProperties = buildProperties;
         }
 
         @Override
@@ -965,6 +1002,8 @@ public final class EmulatorDetector {
                     .append(Arrays.asList(filePath))
                     .append(" | ")
                     .append(Arrays.asList(systemProperties))
+                    .append(" | ")
+                    .append(buildProperties)
                     .append("]")
                     .toString();
         }
