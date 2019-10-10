@@ -81,15 +81,6 @@ public class U {
         return null;
     }
 
-    public static JSONObject getJsonObjSafed(JSONArray json, int index) {
-        try {
-            return json.getJSONObject(index);
-        } catch (JSONException e) {
-        }
-
-        return null;
-    }
-
     public static String getBuildSerial(Context context) {
         String serial = Build.UNKNOWN;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {//9.0+

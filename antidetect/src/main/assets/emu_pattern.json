@@ -2,8 +2,7 @@
   "min_emu_flags_threshold": 3,
   "min_build_threshold": 4,
   "ips": [
-    "10.0.2.15",
-    "10.0.2.16"
+    "10.0.2.15"
   ],
   "bluetooth_path": [
     "/system/lib/libbluetooth_jni.so",

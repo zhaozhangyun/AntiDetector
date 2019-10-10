@@ -45,6 +45,7 @@ public final class EmulatorDetector {
             "init.nox.rc",
             "ueventd.nox.rc"
     };
+    private static final String EMU_PATTERN_FILE_NAME = "emu_pattern.json";
     public static int MIN_EMU_FLAGS_THRESHOLD = 3;
     private static Property[] PROPERTIES = {};
     private static EmuFeature[] EMU_FEATURES = {};
@@ -63,78 +64,20 @@ public final class EmulatorDetector {
     private static Context sContext;
     private static JSONObject jBuild = new JSONObject();
     private static JSONObject jEmu = new JSONObject();
-    private static JSONObject jData = new JSONObject();
     //    private boolean isTelephony = false;
     private List<String> mListPackageName;
 
-    private EmulatorDetector(Context pContext) {
-        sContext = pContext;
-        try {
-            InputStream is = pContext.getResources().getAssets().open("emu_pattern.json");
-            int size = is.available();
-            byte[] buffer = new byte[size];
-            is.read(buffer);
-            is.close();
-            String content = new String(buffer);
-            jData = new JSONObject(content);
-            log("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% jdata: " + jData);
-        } catch (Exception e) {
-            L.e(TAG, "parse emu_pattern.json error", e);
-        }
-
-        MIN_EMU_FLAGS_THRESHOLD = U.getJsonSafed(jData, "min_emu_flags_threshold");
-        MIN_BUILD_THRESHOLD = U.getJsonSafed(jData, "min_build_threshold");
-        IPs = parseJson(jData, "ips");
-        QEMU_DRIVERS = parseJson(jData, "qemu_drivers");
-        PIPES = parseJson(jData, "pipes");
-        X86_FILES = parseJson(jData, "x86_files");
-        EMU_FILES = parseJson(jData, "emu_files");
-
-        JSONArray jProperties = U.getJsonSafed(jData, "properties");
-        PROPERTIES = new Property[jProperties.length()];
-        for (int i = 0; i < jProperties.length(); i++) {
-            JSONObject jo = U.getJsonSafed(jProperties, i);
-            Iterator<String> it = jo.keys();
-            while (it.hasNext()) {
-                String key = it.next();
-                String value = U.getJsonSafed(jo, key);
-                Property p = new Property(key, value);
-                PROPERTIES[i] = p;
-            }
-            log("properties: " + PROPERTIES[i]);
-        }
-
-        MIN_PROPERTIES_THRESHOLD = U.getJsonSafed(jData, "min_properties_threshold");
-
-        String[] packages = parseJson(jData, "packages");
-        mListPackageName = Arrays.asList(packages);
-        log("mListPackageName: " + mListPackageName);
-
-        PHONE_NUMBERS = parseJson(jData, "phone_numbers");
-        DEVICE_IDS = parseJson(jData, "device_id");
-        IMSI_IDS = parseJson(jData, "imsi");
-        BLUETOOTH_PATH = parseJson(jData, "bluetooth_path");
-
-        JSONArray jEmuFeatures = U.getJsonSafed(jData, "emu_features");
-        EMU_FEATURES = new EmuFeature[jEmuFeatures.length()];
-        for (int i = 0; i < jEmuFeatures.length(); i++) {
-            JSONObject jo = U.getJsonSafed(jEmuFeatures, i);
-            String name = U.getJsonSafed(jo, "name");
-            String[] filePath = parseJson(jo, "file_path");
-            String[] systemProperties = parseJson(jo, "sys_prop");
-            EmuFeature ef = new EmuFeature(name, filePath, systemProperties);
-            log("ef: " + ef);
-            EMU_FEATURES[i] = ef;
-        }
-        L.i(TAG, "@@@@@@@@@@@ Parse emu_pattern.json finished.");
+    private EmulatorDetector(Context context) {
+        sContext = context;
+        parseEmuPattern(context);
     }
 
-    public static EmulatorDetector with(Context pContext) {
-        if (pContext == null) {
+    public static EmulatorDetector with(Context context) {
+        if (context == null) {
             throw new IllegalArgumentException("Context must not be null.");
         }
         if (sEmulatorDetector == null) {
-            sEmulatorDetector = new EmulatorDetector(pContext.getApplicationContext());
+            sEmulatorDetector = new EmulatorDetector(context.getApplicationContext());
         }
         return sEmulatorDetector;
     }
@@ -166,6 +109,65 @@ public final class EmulatorDetector {
         return jo;
     }
 
+    private void parseEmuPattern(Context context) {
+        JSONObject jData = null;
+        try {
+            InputStream is = context.getResources().getAssets().open(EMU_PATTERN_FILE_NAME);
+            int size = is.available();
+            byte[] buffer = new byte[size];
+            is.read(buffer);
+            is.close();
+            String content = new String(buffer);
+            jData = new JSONObject(content);
+            log("jdata: " + jData);
+        } catch (Exception e) {
+            L.e(TAG, "parse emu_pattern.json error", e);
+        }
+
+        MIN_EMU_FLAGS_THRESHOLD = U.getJsonSafed(jData, "min_emu_flags_threshold");
+        MIN_BUILD_THRESHOLD = U.getJsonSafed(jData, "min_build_threshold");
+        IPs = parseJson(jData, "ips");
+        QEMU_DRIVERS = parseJson(jData, "qemu_drivers");
+        PIPES = parseJson(jData, "pipes");
+        X86_FILES = parseJson(jData, "x86_files");
+        EMU_FILES = parseJson(jData, "emu_files");
+
+        JSONArray jProperties = U.getJsonSafed(jData, "properties");
+        PROPERTIES = new Property[jProperties.length()];
+        for (int i = 0; i < jProperties.length(); i++) {
+            JSONObject jo = U.getJsonSafed(jProperties, i);
+            Iterator<String> it = jo.keys();
+            while (it.hasNext()) {
+                String key = it.next();
+                String value = U.getJsonSafed(jo, key);
+                Property p = new Property(key, value);
+                PROPERTIES[i] = p;
+            }
+        }
+
+        MIN_PROPERTIES_THRESHOLD = U.getJsonSafed(jData, "min_properties_threshold");
+
+        String[] packages = parseJson(jData, "packages");
+        mListPackageName = Arrays.asList(packages);
+
+        PHONE_NUMBERS = parseJson(jData, "phone_numbers");
+        DEVICE_IDS = parseJson(jData, "device_id");
+        IMSI_IDS = parseJson(jData, "imsi");
+        BLUETOOTH_PATH = parseJson(jData, "bluetooth_path");
+
+        JSONArray jEmuFeatures = U.getJsonSafed(jData, "emu_features");
+        EMU_FEATURES = new EmuFeature[jEmuFeatures.length()];
+        for (int i = 0; i < jEmuFeatures.length(); i++) {
+            JSONObject jo = U.getJsonSafed(jEmuFeatures, i);
+            String name = U.getJsonSafed(jo, "name");
+            String[] filePath = parseJson(jo, "file_path");
+            String[] systemProperties = parseJson(jo, "sys_prop");
+            EmuFeature ef = new EmuFeature(name, filePath, systemProperties);
+            EMU_FEATURES[i] = ef;
+        }
+        log("@@@@@@@@@@@ Parse emu_pattern.json finished.");
+    }
+
     private String[] parseJson(JSONObject jo, String name) {
         log("call parseJson(): name=" + name);
         JSONArray ja = U.getJsonSafed(jo, name);
@@ -194,15 +196,6 @@ public final class EmulatorDetector {
         }
         return false;
     }
-
-//    public boolean isCheckTelephony() {
-//        return isTelephony;
-//    }
-
-//    public EmulatorDetector setCheckTelephony(boolean telephony) {
-//        this.isTelephony = telephony;
-//        return this;
-//    }
 
     // 是否有蓝牙硬件
     private boolean checkBluetoothHardware() {
@@ -277,103 +270,103 @@ public final class EmulatorDetector {
     }
 
     // 海马模拟器特征文件
-    private boolean checkHaimaEmuFeature() {
-        if (U.fileExist("/system/lib/libdroid4x.so")
-                || U.fileExist("/system/bin/droid4x-prop")
-                || !TextUtils.isEmpty(U.getSystemProperties("init.svc.droid4x"))) {
-            U.putJsonSafed(jEmu, "hm", 1);
-            return true;
-        }
-        return false;
-    }
-
-    // 文卓爷模拟器特征文件
-    private boolean checkWenzhuoEmuFeature() {
-        if (U.fileExist("/system/bin/windroyed")) {
-            U.putJsonSafed(jEmu, "wz", 1);
-            return true;
-        }
-        return false;
-    }
-
-    // 逍遥模拟器特征文件
-    private boolean checkXiaoyaoEmuFeature() {
-        if (U.fileExist("/system/bin/microvirt-prop")
-                || U.fileExist("/system/bin/microvirtd")
-                || !TextUtils.isEmpty(U.getSystemProperties("init.svc.microvirtd"))) {
-            U.putJsonSafed(jEmu, "xy", 1);
-            return true;
-        }
-        return false;
-    }
-
-    // BlueStack模拟器特征文件
-    private boolean checkBlueStackEmuFeature() {
-        if (U.fileExist("/data/.bluestacks.prop")) {
-            U.putJsonSafed(jEmu, "bs", 1);
-            return true;
-        }
-        return false;
-    }
-
-    // 夜神模拟器特征文件
-    private boolean checkYeshenEmuFeature() {
-        if (U.fileExist("/system/bin/nox-prop")
-                || !TextUtils.isEmpty(U.getSystemProperties("init.svc.noxd"))) {
-            U.putJsonSafed(jEmu, "ys", 1);
-            return true;
-        }
-        return false;
-    }
-
-    // 天天模拟器特征文件
-    private boolean checkTiantianEmuFeature() {
-        if (U.fileExist("/system/bin/ttVM-prop")
-                || !TextUtils.isEmpty(U.getSystemProperties("init.svc.ttVM_x86-setup"))) {
-            U.putJsonSafed(jEmu, "tt", 1);
-            return true;
-        }
-        return false;
-    }
-
-    // Vbox特征
-    private boolean checkVboxFeature() {
-        if (!TextUtils.isEmpty(U.getSystemProperties("init.svc.vbox86-setup"))
-                || !TextUtils.isEmpty(U.getSystemProperties("androVM.vbox_dpi"))
-                || !TextUtils.isEmpty(U.getSystemProperties("androVM.vbox_graph_mode"))) {
-            U.putJsonSafed(jEmu, "vb", 1);
-            return true;
-        }
-        return false;
-    }
-
-    // Genymotion特征
-    private boolean checkGenymotionFeature() {
-        if (U.getSystemProperties("ro.product.manufacturer").contains("Genymotion")) {
-            U.putJsonSafed(jEmu, "gy", 1);
-            return true;
-        }
-        return false;
-    }
-
-    // Qemu特征
-    private boolean checkQemuFeature() {
-        String[] known_files = {"/system/lib/libc_malloc_debug_qemu.so", "/sys/qemu_trace",
-                "/system/bin/qemu-props", "/system/bin/qemu_props"};
-        for (String pipe : known_files) {
-            if (U.fileExist(pipe)) {
-                log("checkQemuFeature: " + pipe);
-                U.putJsonSafed(jEmu, "qe", 1);
-                return true;
-            }
-        }
-        if (!TextUtils.isEmpty(U.getSystemProperties("init.svc.qemud"))
-                || !TextUtils.isEmpty(U.getSystemProperties("ro.kernel.android.qemud"))) {
-            U.putJsonSafed(jEmu, "qe", 1);
-            return true;
-        }
-        return false;
-    }
+//    private boolean checkHaimaEmuFeature() {
+//        if (U.fileExist("/system/lib/libdroid4x.so")
+//                || U.fileExist("/system/bin/droid4x-prop")
+//                || !TextUtils.isEmpty(U.getSystemProperties("init.svc.droid4x"))) {
+//            U.putJsonSafed(jEmu, "hm", 1);
+//            return true;
+//        }
+//        return false;
+//    }
+//
+//    // 文卓爷模拟器特征文件
+//    private boolean checkWenzhuoEmuFeature() {
+//        if (U.fileExist("/system/bin/windroyed")) {
+//            U.putJsonSafed(jEmu, "wz", 1);
+//            return true;
+//        }
+//        return false;
+//    }
+//
+//    // 逍遥模拟器特征文件
+//    private boolean checkXiaoyaoEmuFeature() {
+//        if (U.fileExist("/system/bin/microvirt-prop")
+//                || U.fileExist("/system/bin/microvirtd")
+//                || !TextUtils.isEmpty(U.getSystemProperties("init.svc.microvirtd"))) {
+//            U.putJsonSafed(jEmu, "xy", 1);
+//            return true;
+//        }
+//        return false;
+//    }
+//
+//    // BlueStack模拟器特征文件
+//    private boolean checkBlueStackEmuFeature() {
+//        if (U.fileExist("/data/.bluestacks.prop")) {
+//            U.putJsonSafed(jEmu, "bs", 1);
+//            return true;
+//        }
+//        return false;
+//    }
+//
+//    // 夜神模拟器特征文件
+//    private boolean checkYeshenEmuFeature() {
+//        if (U.fileExist("/system/bin/nox-prop")
+//                || !TextUtils.isEmpty(U.getSystemProperties("init.svc.noxd"))) {
+//            U.putJsonSafed(jEmu, "ys", 1);
+//            return true;
+//        }
+//        return false;
+//    }
+//
+//    // 天天模拟器特征文件
+//    private boolean checkTiantianEmuFeature() {
+//        if (U.fileExist("/system/bin/ttVM-prop")
+//                || !TextUtils.isEmpty(U.getSystemProperties("init.svc.ttVM_x86-setup"))) {
+//            U.putJsonSafed(jEmu, "tt", 1);
+//            return true;
+//        }
+//        return false;
+//    }
+//
+//    // Vbox特征
+//    private boolean checkVboxFeature() {
+//        if (!TextUtils.isEmpty(U.getSystemProperties("init.svc.vbox86-setup"))
+//                || !TextUtils.isEmpty(U.getSystemProperties("androVM.vbox_dpi"))
+//                || !TextUtils.isEmpty(U.getSystemProperties("androVM.vbox_graph_mode"))) {
+//            U.putJsonSafed(jEmu, "vb", 1);
+//            return true;
+//        }
+//        return false;
+//    }
+//
+//    // Genymotion特征
+//    private boolean checkGenymotionFeature() {
+//        if (U.getSystemProperties("ro.product.manufacturer").contains("Genymotion")) {
+//            U.putJsonSafed(jEmu, "gy", 1);
+//            return true;
+//        }
+//        return false;
+//    }
+//
+//    // Qemu特征
+//    private boolean checkQemuFeature() {
+//        String[] known_files = {"/system/lib/libc_malloc_debug_qemu.so", "/sys/qemu_trace",
+//                "/system/bin/qemu-props", "/system/bin/qemu_props"};
+//        for (String pipe : known_files) {
+//            if (U.fileExist(pipe)) {
+//                log("checkQemuFeature: " + pipe);
+//                U.putJsonSafed(jEmu, "qe", 1);
+//                return true;
+//            }
+//        }
+//        if (!TextUtils.isEmpty(U.getSystemProperties("init.svc.qemud"))
+//                || !TextUtils.isEmpty(U.getSystemProperties("ro.kernel.android.qemud"))) {
+//            U.putJsonSafed(jEmu, "qe", 1);
+//            return true;
+//        }
+//        return false;
+//    }
 
     // CPU信息
     private boolean checkCpuInfo() {
@@ -400,18 +393,6 @@ public final class EmulatorDetector {
                 U.putJsonSafed(jEmu, "di", 1);
                 return true;
             }
-        }
-        return false;
-    }
-
-    // 检查网络运营商名称
-    private boolean checkNetworkOperatorName(Context context) {
-        String networkOP = ((TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE))
-                .getNetworkOperatorName();
-        if (networkOP.equalsIgnoreCase("android")) {
-            log("checkNetworkOperatorName(): " + networkOP);
-            U.putJsonSafed(jEmu, "no", 1);
-            return true;
         }
         return false;
     }
@@ -678,13 +659,13 @@ public final class EmulatorDetector {
         if (checkDeviceInfo()) {
             return true;
         }
-        if (checkNetworkOperatorName(context)) {
-            return true;
-        }
         if (checkAdvanced()) {
             return true;
         }
         if (checkPackageName()) {
+            return true;
+        }
+        if (checkTelephony()) {
             return true;
         }
 
@@ -726,72 +707,74 @@ public final class EmulatorDetector {
         return false;
     }
 
-//    private boolean checkTelephony() {
-//        if (ContextCompat.checkSelfPermission(sContext, Manifest.permission.READ_PHONE_STATE)
-//                == PackageManager.PERMISSION_GRANTED && this.isTelephony && isSupportTelePhony()) {
-//            return checkPhoneNumber()
-//                    || checkDeviceId()
-//                    || checkImsi()
-//                    || checkOperatorNameAndroid();
-//        }
-//        return false;
-//    }
-//
-//    private boolean checkPhoneNumber() {
-//        TelephonyManager telephonyManager =
-//                (TelephonyManager) sContext.getSystemService(Context.TELEPHONY_SERVICE);
-//
-//        @SuppressLint("HardwareIds") String phoneNumber = telephonyManager.getLine1Number();
-//
-//        for (String number : PHONE_NUMBERS) {
-//            if (number.equalsIgnoreCase(phoneNumber)) {
-//                log(" check phone number is detected");
-//                return true;
-//            }
-//
-//        }
-//        return false;
-//    }
-//
-//    private boolean checkDeviceId() {
-//        TelephonyManager telephonyManager =
-//                (TelephonyManager) sContext.getSystemService(Context.TELEPHONY_SERVICE);
-//
-//        @SuppressLint("HardwareIds") String deviceId = telephonyManager.getDeviceId();
-//
-//        for (String known_deviceId : DEVICE_IDS) {
-//            if (known_deviceId.equalsIgnoreCase(deviceId)) {
-//                log("Check device id is detected");
-//                return true;
-//            }
-//
-//        }
-//        return false;
-//    }
-//
-//    private boolean checkImsi() {
-//        TelephonyManager telephonyManager =
-//                (TelephonyManager) sContext.getSystemService(Context.TELEPHONY_SERVICE);
-//        @SuppressLint("HardwareIds") String imsi = telephonyManager.getSubscriberId();
-//
-//        for (String known_imsi : IMSI_IDS) {
-//            if (known_imsi.equalsIgnoreCase(imsi)) {
-//                log("Check imsi is detected");
-//                return true;
-//            }
-//        }
-//        return false;
-//    }
-//
-//    private boolean checkOperatorNameAndroid() {
-//        String operatorName = ((TelephonyManager)
-//                sContext.getSystemService(Context.TELEPHONY_SERVICE)).getNetworkOperatorName();
-//        if (operatorName.equalsIgnoreCase("android")) {
-//            log("Check operator name android is detected");
-//            return true;
-//        }
-//        return false;
-//    }
+    private boolean checkTelephony() {
+        return checkPhoneNumber()
+                || checkDeviceId()
+                || checkImsi()
+                || checkOperatorNameAndroid();
+    }
+
+    private boolean checkPhoneNumber() {
+        if (ContextCompat.checkSelfPermission(sContext, Manifest.permission.READ_PHONE_STATE)
+                == PackageManager.PERMISSION_GRANTED && isSupportTelePhony()) {
+            TelephonyManager telephonyManager =
+                    (TelephonyManager) sContext.getSystemService(Context.TELEPHONY_SERVICE);
+            String phoneNumber = telephonyManager.getLine1Number();
+            for (String number : PHONE_NUMBERS) {
+                if (number.equalsIgnoreCase(phoneNumber)) {
+                    log(" check phone number is detected");
+                    U.putJsonSafed(jEmu, "pn", 1);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean checkDeviceId() {
+        if (ContextCompat.checkSelfPermission(sContext, Manifest.permission.READ_PHONE_STATE)
+                == PackageManager.PERMISSION_GRANTED && isSupportTelePhony()) {
+            TelephonyManager telephonyManager =
+                    (TelephonyManager) sContext.getSystemService(Context.TELEPHONY_SERVICE);
+            String deviceId = telephonyManager.getDeviceId();
+            for (String known_deviceId : DEVICE_IDS) {
+                if (known_deviceId.equalsIgnoreCase(deviceId)) {
+                    log("Check device id is detected");
+                    U.putJsonSafed(jEmu, "de", 1);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean checkImsi() {
+        if (ContextCompat.checkSelfPermission(sContext, Manifest.permission.READ_PHONE_STATE)
+                == PackageManager.PERMISSION_GRANTED && isSupportTelePhony()) {
+            TelephonyManager telephonyManager =
+                    (TelephonyManager) sContext.getSystemService(Context.TELEPHONY_SERVICE);
+            String imsi = telephonyManager.getSubscriberId();
+            for (String known_imsi : IMSI_IDS) {
+                if (known_imsi.equalsIgnoreCase(imsi)) {
+                    log("Check imsi is detected");
+                    U.putJsonSafed(jEmu, "im", 1);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean checkOperatorNameAndroid() {
+        String operatorName = ((TelephonyManager)
+                sContext.getSystemService(Context.TELEPHONY_SERVICE)).getNetworkOperatorName();
+        if (operatorName.equalsIgnoreCase("android")) {
+            log("Check operator name android is detected");
+            U.putJsonSafed(jEmu, "no", 1);
+            return true;
+        }
+        return false;
+    }
 
     private boolean checkQEmuDrivers() {
         for (File drivers_file : new File[]{new File("/proc/tty/drivers"),
@@ -892,18 +875,15 @@ public final class EmulatorDetector {
                         }
                     }
                 }
-
             }
         }
         return false;
     }
 
-//    private boolean isSupportTelePhony() {
-//        PackageManager packageManager = sContext.getPackageManager();
-//        boolean isSupport = packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY);
-//        log("Supported TelePhony: " + isSupport);
-//        return isSupport;
-//    }
+    private boolean isSupportTelePhony() {
+        PackageManager packageManager = sContext.getPackageManager();
+        return packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY);
+    }
 
     static class Property {
         String name;
