@@ -761,7 +761,7 @@ public final class EmulatorDetector {
             String phoneNumber = telephonyManager.getLine1Number();
             for (String number : PHONE_NUMBERS) {
                 if (number.equalsIgnoreCase(phoneNumber)) {
-                    log(" Check [" + number + "] is detected");
+                    log("Check [" + number + "] is detected");
                     U.putJsonSafed(jEmu, "pn", 1);
                     return true;
                 }
