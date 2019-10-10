@@ -61,7 +61,7 @@ public final class EmulatorDetector {
     private static String[] BLUETOOTH_PATH = {};
     private static String[] QEMU_DRIVERS = {};
     private static String[] IPs = {};
-    private static int MIN_PROPERTIES_THRESHOLD = 0x5;
+    private static int MIN_PROPERTIES_THRESHOLD = 5;
     private static int MIN_BUILD_THRESHOLD = 4;
     private static EmulatorDetector sEmulatorDetector;
     private static Context sContext;
@@ -173,20 +173,24 @@ public final class EmulatorDetector {
     }
 
     private String[] parseJsonToArray(JSONObject data, String name) {
-        log("call parseJsonToArray(): name=" + name);
         JSONArray ja = U.getJsonSafed(data, name);
+        if (ja.length() > 0) {
+            log("call parseJsonToArray(): name=" + name);
+        }
         String[] content = new String[ja.length()];
         for (int i = 0; i < ja.length(); i++) {
             content[i] = U.getJsonSafed(ja, i);
-            log("   -- value: " + content[i]);
+            log("   -- " + content[i]);
         }
         return content;
     }
 
     private Map<String, String> parseJsonToMap(JSONObject data, String name) {
-        log("call parseJsonToMap(): name=" + name);
         Map<String, String> result = new HashMap<>();
         JSONArray ja = U.getJsonSafed(data, name);
+        if (ja.length() > 0) {
+            log("call parseJsonToMap(): name=" + name);
+        }
         for (int i = 0; i < ja.length(); i++) {
             JSONObject jo = U.getJsonSafed(ja, i);
             Iterator<String> it = jo.keys();
@@ -194,7 +198,7 @@ public final class EmulatorDetector {
                 String key = it.next();
                 String value = U.getJsonSafed(jo, key);
                 result.put(key, value);
-                log("   -- value: " + result);
+                log("   -- " + result);
             }
         }
         return result;
@@ -275,14 +279,16 @@ public final class EmulatorDetector {
 
             for (String path : filePath) {
                 if (U.fileExist(path)) {
-                    U.putJsonSafed(jEmu, name, 1);
+                    log("Check [" + name + "] is detected");
+                    U.putJsonSafed(jEmu, "fe", 1);
                     return true;
                 }
             }
 
             for (String sysProp : systemProperties) {
                 if (!TextUtils.isEmpty(U.getSystemProperties(sysProp))) {
-                    U.putJsonSafed(jEmu, name, 1);
+                    log("Check [" + name + "] is detected");
+                    U.putJsonSafed(jEmu, "fe", 1);
                     return true;
                 }
             }
@@ -294,7 +300,8 @@ public final class EmulatorDetector {
                 String value = buildProperties.get(key);
                 if (!TextUtils.isEmpty(key) && !TextUtils.isEmpty(value)) {
                     if (U.getSystemProperties(key).toLowerCase().contains(value.toLowerCase())) {
-                        U.putJsonSafed(jEmu, name, 1);
+                        log("Check [" + name + "] is detected");
+                        U.putJsonSafed(jEmu, "fe", 1);
                         return true;
                     }
                 }
@@ -794,9 +801,9 @@ public final class EmulatorDetector {
             TelephonyManager telephonyManager =
                     (TelephonyManager) sContext.getSystemService(Context.TELEPHONY_SERVICE);
             String phoneNumber = telephonyManager.getLine1Number();
-            for (String number : PHONE_NUMBERS) {
-                if (number.equalsIgnoreCase(phoneNumber)) {
-                    log("Check [" + number + "] is detected");
+            for (String known_number : PHONE_NUMBERS) {
+                if (known_number.equalsIgnoreCase(phoneNumber)) {
+                    log("Check [" + known_number + "] is detected");
                     U.putJsonSafed(jEmu, "pn", 1);
                     return true;
                 }
@@ -906,6 +913,7 @@ public final class EmulatorDetector {
                 found_props++;
             }
         }
+        log("checkQEmuProps(): " + found_props + " (thresholds: " + MIN_PROPERTIES_THRESHOLD + ")");
 
         if (found_props >= MIN_PROPERTIES_THRESHOLD) {
             U.putJsonSafed(jEmu, "qp", found_props);
@@ -973,7 +981,7 @@ public final class EmulatorDetector {
             return new StringBuilder()
                     .append("[")
                     .append(name)
-                    .append(" : ")
+                    .append(": ")
                     .append(seek_value)
                     .append("]")
                     .toString();

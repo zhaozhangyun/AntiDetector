@@ -53,12 +53,6 @@
       "qemu.sf.lcd_density": null
     },
     {
-      "ro.bootloader": "unknown"
-    },
-    {
-      "ro.bootmode": "unknown"
-    },
-    {
       "ro.hardware": "goldfish"
     },
     {
@@ -78,9 +72,6 @@
     },
     {
       "ro.product.name": "sdk"
-    },
-    {
-      "ro.serialno": null
     }
   ],
   "min_properties_threshold": 5,
