@@ -373,7 +373,7 @@ public final class EmulatorDetector {
         String cpu = getCPUInfo();
         if (!TextUtils.isEmpty(cpu)) {
             if (cpu.toLowerCase().contains("intel") || cpu.toLowerCase().contains("amd")) {
-                log(" Check [" + cpu + "] is detected");
+                log("Check [" + cpu + "] is detected");
                 U.putJsonSafed(jEmu, "ci", 1);
                 return true;
             }
@@ -389,7 +389,7 @@ public final class EmulatorDetector {
                     || device.toLowerCase().contains("tencent")
                     || device.toLowerCase().contains("ttvm")
                     || device.toLowerCase().contains("tiantian")) {
-                log(" Check [" + device + "] is detected");
+                log("Check [" + device + "] is detected");
                 U.putJsonSafed(jEmu, "di", 1);
                 return true;
             }
