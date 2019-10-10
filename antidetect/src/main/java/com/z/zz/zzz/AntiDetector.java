@@ -54,6 +54,7 @@ public final class AntiDetector {
     private static AntiDetector sAntiDetector;
     public Map<String, String> mData;
     private Context context;
+    private boolean isDebug;
     private WhiteListXmlParser parser;
     private boolean isSticky;
 
@@ -294,6 +295,7 @@ public final class AntiDetector {
     }
 
     public AntiDetector setDebug(boolean isDebug) {
+        this.isDebug = isDebug;
         if (isDebug) {
             parser = new WhiteListXmlParser();
             parser.parse(context);
@@ -472,7 +474,7 @@ public final class AntiDetector {
 
     private boolean isEmulator() {
         long start = System.currentTimeMillis();
-        boolean isEmulator = EmulatorDetector.with(context).detect();
+        boolean isEmulator = EmulatorDetector.with(context).setDebug(isDebug).detect();
         L.d(TAG, ">>> Check emulator cost " + (System.currentTimeMillis() - start) + "ms");
         L.v(TAG, ">>> Emulator dump: " + EmulatorDetector.dump());
         if (isEmulator) {
