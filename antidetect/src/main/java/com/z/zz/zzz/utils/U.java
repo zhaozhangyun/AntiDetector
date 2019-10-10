@@ -7,6 +7,7 @@ import android.os.Build;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -58,6 +59,35 @@ public class U {
         }
 
         return json;
+    }
+
+    public static <O> O getJsonSafed(JSONObject json, String name) {
+        try {
+            if (json.has(name) && !json.isNull(name)) {
+                return (O) json.get(name);
+            }
+        } catch (JSONException e) {
+        }
+
+        return null;
+    }
+
+    public static <O> O getJsonSafed(JSONArray json, int index) {
+        try {
+            return (O) json.get(index);
+        } catch (JSONException e) {
+        }
+
+        return null;
+    }
+
+    public static JSONObject getJsonObjSafed(JSONArray json, int index) {
+        try {
+            return json.getJSONObject(index);
+        } catch (JSONException e) {
+        }
+
+        return null;
     }
 
     public static String getBuildSerial(Context context) {

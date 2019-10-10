@@ -1,0 +1,202 @@
+{
+  "min_emu_flags_threshold": 3,
+  "min_build_threshold": 4,
+  "ips": [
+    "10.0.2.15",
+    "10.0.2.16"
+  ],
+  "bluetooth_path": [
+    "/system/lib/libbluetooth_jni.so",
+    "/system/lib64/libbluetooth_jni.so",
+    "/system/lib/arm64/libbluetooth_jni.so",
+    "/system/vendor/lib64/libbluetooth_jni.so"
+  ],
+  "qemu_drivers": [
+    "goldfish"
+  ],
+  "pipes": [
+    "/dev/socket/qemud",
+    "/dev/qemu_pipe"
+  ],
+  "x86_files": [
+    "ueventd.android_x86.rc",
+    "x86.prop",
+    "ueventd.ttVM_x86.rc",
+    "init.ttVM_x86.rc",
+    "fstab.ttVM_x86",
+    "fstab.vbox86",
+    "init.vbox86.rc",
+    "ueventd.vbox86.rc"
+  ],
+  "emu_files": [
+    "fstab.andy",
+    "ueventd.andy.rc",
+    "fstab.nox",
+    "init.nox.rc",
+    "ueventd.nox.rc",
+    "/dev/socket/genyd",
+    "/dev/socket/baseband_genyd"
+  ],
+  "properties": [
+    {
+      "init.svc.qemud": null
+    },
+    {
+      "init.svc.qemu-props": null
+    },
+    {
+      "qemu.hw.mainkeys": null
+    },
+    {
+      "qemu.sf.fake_camera": null
+    },
+    {
+      "qemu.sf.lcd_density": null
+    },
+    {
+      "ro.bootloader": "unknown"
+    },
+    {
+      "ro.bootmode": "unknown"
+    },
+    {
+      "ro.hardware": "goldfish"
+    },
+    {
+      "ro.kernel.android.qemud": null
+    },
+    {
+      "ro.kernel.qemu.gles": null
+    },
+    {
+      "ro.kernel.qemu": "1"
+    },
+    {
+      "ro.product.device": "generic"
+    },
+    {
+      "ro.product.model": "sdk"
+    },
+    {
+      "ro.product.name": "sdk"
+    },
+    {
+      "ro.serialno": null
+    }
+  ],
+  "min_properties_threshold": 5,
+  "packages": [
+    "com.google.android.launcher.layouts.genymotion",
+    "com.bluestacks",
+    "com.bignox.app"
+  ],
+  "phone_numbers": [
+    "15555215554",
+    "15555215556",
+    "15555215558",
+    "15555215560",
+    "15555215562",
+    "15555215564",
+    "15555215566",
+    "15555215568",
+    "15555215570",
+    "15555215572",
+    "15555215574",
+    "15555215576",
+    "15555215578",
+    "15555215580",
+    "15555215582",
+    "15555215584"
+  ],
+  "device_id": [
+    "000000000000000",
+    "e21833235b6eef10",
+    "012345678912345"
+  ],
+  "imsi": [
+    "310260000000000"
+  ],
+  "emu_features": [
+    {
+      "name": "qemu",
+      "file_path": [
+        "/system/lib/libc_malloc_debug_qemu.so",
+        "/sys/qemu_trace",
+        "/system/bin/qemu-props",
+        "/system/bin/qemu_props"
+      ],
+      "sys_prop": [
+        "init.svc.qemud",
+        "ro.kernel.android.qemud"
+      ]
+    },
+    {
+      "name": "genymotion",
+      "file_path": [],
+      "sys_prop": [
+        "ro.product.manufacturer"
+      ]
+    },
+    {
+      "name": "vbox",
+      "file_path": [],
+      "sys_prop": [
+        "init.svc.vbox86-setup",
+        "androVM.vbox_dpi",
+        "androVM.vbox_graph_mode"
+      ]
+    },
+    {
+      "name": "ttVM",
+      "file_path": [
+        "/system/bin/ttVM-prop"
+      ],
+      "sys_prop": [
+        "init.svc.ttVM_x86-setup"
+      ]
+    },
+    {
+      "name": "nox",
+      "file_path": [
+        "/system/bin/nox-prop"
+      ],
+      "sys_prop": [
+        "init.svc.noxd"
+      ]
+    },
+    {
+      "name": "bluestacks",
+      "file_path": [
+        "/data/.bluestacks.prop"
+      ],
+      "sys_prop": []
+    },
+    {
+      "name": "microvirt",
+      "file_path": [
+        "/system/bin/microvirt-prop"
+      ],
+      "sys_prop": [
+        "/system/bin/microvirtd",
+        "init.svc.microvirtd"
+      ]
+    },
+    {
+      "name": "windroyed",
+      "file_path": [
+        "/system/bin/windroyed"
+      ],
+      "sys_prop": []
+    },
+    {
+      "name": "droid4x",
+      "file_path": [
+        "/system/lib/libdroid4x.so",
+        "/system/bin/droid4x-prop"
+      ],
+      "sys_prop": [
+        "init.svc.droid4x"
+      ]
+    }
+  ]
+}

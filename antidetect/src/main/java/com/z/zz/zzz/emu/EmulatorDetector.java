@@ -16,6 +16,7 @@ import com.z.zz.zzz.AntiDetector;
 import com.z.zz.zzz.utils.L;
 import com.z.zz.zzz.utils.U;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -23,47 +24,17 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.InputStream;
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import static com.z.zz.zzz.AntiDetector.TAG;
 
 public final class EmulatorDetector {
 
-    private static final int MIN_BUILD_THRESHOLD = 4;
     private static final String[] GENY_FILES = {
             "/dev/socket/genyd",
             "/dev/socket/baseband_genyd"
-    };
-    //    private static final String[] PHONE_NUMBERS = {
-//            "15555215554", "15555215556", "15555215558", "15555215560", "15555215562", "15555215564",
-//            "15555215566", "15555215568", "15555215570", "15555215572", "15555215574", "15555215576",
-//            "15555215578", "15555215580", "15555215582", "15555215584"
-//    };
-//
-//    private static final String[] DEVICE_IDS = {
-//            "000000000000000",
-//            "e21833235b6eef10",
-//            "012345678912345"
-//    };
-//
-//    private static final String[] IMSI_IDS = {
-//            "310260000000000"
-//    };
-    private static final String[] QEMU_DRIVERS = {"goldfish"};
-    private static final String[] PIPES = {
-            "/dev/socket/qemud",
-            "/dev/qemu_pipe"
-    };
-    private static final String[] X86_FILES = {
-            "ueventd.android_x86.rc",
-            "x86.prop",
-            "ueventd.ttVM_x86.rc",
-            "init.ttVM_x86.rc",
-            "fstab.ttVM_x86",
-            "fstab.vbox86",
-            "init.vbox86.rc",
-            "ueventd.vbox86.rc"
     };
     private static final String[] ANDY_FILES = {
             "fstab.andy",
@@ -74,38 +45,88 @@ public final class EmulatorDetector {
             "init.nox.rc",
             "ueventd.nox.rc"
     };
-    private static final Property[] PROPERTIES = {
-            new Property("init.svc.qemud", null),
-            new Property("init.svc.qemu-props", null),
-            new Property("qemu.hw.mainkeys", null),
-            new Property("qemu.sf.fake_camera", null),
-            new Property("qemu.sf.lcd_density", null),
-            new Property("ro.bootloader", Build.UNKNOWN),
-            new Property("ro.bootmode", Build.UNKNOWN),
-            new Property("ro.hardware", "goldfish"),
-            new Property("ro.kernel.android.qemud", null),
-            new Property("ro.kernel.qemu.gles", null),
-            new Property("ro.kernel.qemu", "1"),
-            new Property("ro.product.device", "generic"),
-            new Property("ro.product.model", "sdk"),
-            new Property("ro.product.name", "sdk"),
-            new Property("ro.serialno", null)
-    };
-    private static final String IP = "10.0.2.15";
-    private static final int MIN_PROPERTIES_THRESHOLD = 0x5;
-    public static int MIN_EMU_FLAGS_THRESHOLD = 4;
+    public static int MIN_EMU_FLAGS_THRESHOLD = 3;
+    private static Property[] PROPERTIES = {};
+    private static EmuFeature[] EMU_FEATURES = {};
+    private static String[] EMU_FILES = {};
+    private static String[] X86_FILES = {};
+    private static String[] PIPES = {};
+    private static String[] PHONE_NUMBERS = {};
+    private static String[] DEVICE_IDS = {};
+    private static String[] IMSI_IDS = {};
+    private static String[] BLUETOOTH_PATH = {};
+    private static String[] QEMU_DRIVERS = {};
+    private static String[] IPs = {};
+    private static int MIN_PROPERTIES_THRESHOLD = 0x5;
+    private static int MIN_BUILD_THRESHOLD = 4;
     private static EmulatorDetector sEmulatorDetector;
     private static Context sContext;
-    private static JSONObject jBuild;
-    private static JSONObject jEmu;
+    private static JSONObject jBuild = new JSONObject();
+    private static JSONObject jEmu = new JSONObject();
+    private static JSONObject jData = new JSONObject();
     //    private boolean isTelephony = false;
-    private List<String> mListPackageName = new ArrayList<>();
+    private List<String> mListPackageName;
 
     private EmulatorDetector(Context pContext) {
         sContext = pContext;
-        mListPackageName.add("com.google.android.launcher.layouts.genymotion");
-        mListPackageName.add("com.bluestacks");
-        mListPackageName.add("com.bignox.app");
+        try {
+            InputStream is = pContext.getResources().getAssets().open("emu_pattern.json");
+            int size = is.available();
+            byte[] buffer = new byte[size];
+            is.read(buffer);
+            is.close();
+            String content = new String(buffer);
+            jData = new JSONObject(content);
+            log("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% jdata: " + jData);
+        } catch (Exception e) {
+            L.e(TAG, "parse emu_pattern.json error", e);
+        }
+
+        MIN_EMU_FLAGS_THRESHOLD = U.getJsonSafed(jData, "min_emu_flags_threshold");
+        MIN_BUILD_THRESHOLD = U.getJsonSafed(jData, "min_build_threshold");
+        IPs = parseJson(jData, "ips");
+        QEMU_DRIVERS = parseJson(jData, "qemu_drivers");
+        PIPES = parseJson(jData, "pipes");
+        X86_FILES = parseJson(jData, "x86_files");
+        EMU_FILES = parseJson(jData, "emu_files");
+
+        JSONArray jProperties = U.getJsonSafed(jData, "properties");
+        PROPERTIES = new Property[jProperties.length()];
+        for (int i = 0; i < jProperties.length(); i++) {
+            JSONObject jo = U.getJsonSafed(jProperties, i);
+            Iterator<String> it = jo.keys();
+            while (it.hasNext()) {
+                String key = it.next();
+                String value = U.getJsonSafed(jo, key);
+                Property p = new Property(key, value);
+                PROPERTIES[i] = p;
+            }
+            log("properties: " + PROPERTIES[i]);
+        }
+
+        MIN_PROPERTIES_THRESHOLD = U.getJsonSafed(jData, "min_properties_threshold");
+
+        String[] packages = parseJson(jData, "packages");
+        mListPackageName = Arrays.asList(packages);
+        log("mListPackageName: " + mListPackageName);
+
+        PHONE_NUMBERS = parseJson(jData, "phone_numbers");
+        DEVICE_IDS = parseJson(jData, "device_id");
+        IMSI_IDS = parseJson(jData, "imsi");
+        BLUETOOTH_PATH = parseJson(jData, "bluetooth_path");
+
+        JSONArray jEmuFeatures = U.getJsonSafed(jData, "emu_features");
+        EMU_FEATURES = new EmuFeature[jEmuFeatures.length()];
+        for (int i = 0; i < jEmuFeatures.length(); i++) {
+            JSONObject jo = U.getJsonSafed(jEmuFeatures, i);
+            String name = U.getJsonSafed(jo, "name");
+            String[] filePath = parseJson(jo, "file_path");
+            String[] systemProperties = parseJson(jo, "sys_prop");
+            EmuFeature ef = new EmuFeature(name, filePath, systemProperties);
+            log("ef: " + ef);
+            EMU_FEATURES[i] = ef;
+        }
+        L.i(TAG, "@@@@@@@@@@@ Parse emu_pattern.json finished.");
     }
 
     public static EmulatorDetector with(Context pContext) {
@@ -145,6 +166,17 @@ public final class EmulatorDetector {
         return jo;
     }
 
+    private String[] parseJson(JSONObject jo, String name) {
+        log("call parseJson(): name=" + name);
+        JSONArray ja = U.getJsonSafed(jo, name);
+        String[] content = new String[ja.length()];
+        for (int i = 0; i < ja.length(); i++) {
+            content[i] = U.getJsonSafed(ja, i);
+            log("   -- value: " + content[i]);
+        }
+        return content;
+    }
+
     private void log(String str) {
         L.v(TAG, "Emu ---> " + str);
     }
@@ -175,15 +207,14 @@ public final class EmulatorDetector {
     // 是否有蓝牙硬件
     private boolean checkBluetoothHardware() {
         // 兼容64位ARM处理器
-        if (!U.fileExist("/system/lib/libbluetooth_jni.so")
-                && !U.fileExist("/system/lib64/libbluetooth_jni.so")
-                && !U.fileExist("/system/lib/arm64/libbluetooth_jni.so")
-                && !U.fileExist("/system/vendor/lib64/libbluetooth_jni.so")) {
-            log("checkBluetoothHardware failed --- Not found libbluetooth_jni.so");
-            U.putJsonSafed(jEmu, "bt", 1);
-            return true;
+        for (String path : BLUETOOTH_PATH) {
+            if (U.fileExist(path)) {
+                return false;
+            }
         }
-        return false;
+        log("checkBluetoothHardware failed --- Not found libbluetooth_jni.so");
+        U.putJsonSafed(jEmu, "bt", 1);
+        return true;
     }
 
     // 是否有GPS硬件
@@ -221,17 +252,27 @@ public final class EmulatorDetector {
         return false;
     }
 
-    // 源生模拟器特征文件
-    private boolean checkOriginEmuFeature() {
-        String[] known_files = {"/system/lib/libc_malloc_debug_qemu.so", "/sys/qemu_trace",
-                "/system/bin/qemu-props", "/system/bin/qemu_props"};
-        for (String pipe : known_files) {
-            if (U.fileExist(pipe)) {
-                log("checkOriginEmuFeature: " + pipe);
-                U.putJsonSafed(jEmu, "or", 1);
-                return true;
+    private boolean checkEmuFeature() {
+        for (EmuFeature ef : EMU_FEATURES) {
+            String name = ef.name;
+            String[] filePath = ef.filePath;
+            String[] systemProperties = ef.systemProperties;
+
+            for (String path : filePath) {
+                if (U.fileExist(path)) {
+                    U.putJsonSafed(jEmu, name, 1);
+                    return true;
+                }
+            }
+
+            for (String sysProp : systemProperties) {
+                if (!TextUtils.isEmpty(U.getSystemProperties(sysProp))) {
+                    U.putJsonSafed(jEmu, name, 1);
+                    return true;
+                }
             }
         }
+
         return false;
     }
 
@@ -317,9 +358,18 @@ public final class EmulatorDetector {
 
     // Qemu特征
     private boolean checkQemuFeature() {
+        String[] known_files = {"/system/lib/libc_malloc_debug_qemu.so", "/sys/qemu_trace",
+                "/system/bin/qemu-props", "/system/bin/qemu_props"};
+        for (String pipe : known_files) {
+            if (U.fileExist(pipe)) {
+                log("checkQemuFeature: " + pipe);
+                U.putJsonSafed(jEmu, "qe", 1);
+                return true;
+            }
+        }
         if (!TextUtils.isEmpty(U.getSystemProperties("init.svc.qemud"))
                 || !TextUtils.isEmpty(U.getSystemProperties("ro.kernel.android.qemud"))) {
-            U.putJsonSafed(jEmu, "qd", 1);
+            U.putJsonSafed(jEmu, "qe", 1);
             return true;
         }
         return false;
@@ -329,13 +379,7 @@ public final class EmulatorDetector {
     private boolean checkCpuInfo() {
         String cpu = getCPUInfo();
         if (!TextUtils.isEmpty(cpu)) {
-            if (cpu.contains("Genuine Intel(R)")
-                    || cpu.contains("Intel(R) Core(TM)")
-                    || cpu.contains("Intel(R) Pentium(R)")
-                    || cpu.contains("Intel(R) Xeon(R)")
-                    || cpu.contains("AMD")
-                    || cpu.toLowerCase().contains("intel")
-                    || cpu.toLowerCase().contains("amd")) {
+            if (cpu.toLowerCase().contains("intel") || cpu.toLowerCase().contains("amd")) {
                 log("checkCpuInfo(): " + cpu);
                 U.putJsonSafed(jEmu, "ci", 1);
                 return true;
@@ -389,9 +433,9 @@ public final class EmulatorDetector {
                 if (info.length >= 2) {
                     String k = info[0].trim();
                     String v = info[1].trim();
-                    if ("Hardware".equals(k)) {
+                    if ("Hardware".equalsIgnoreCase(k)) {
                         name = v;
-                    } else if ("model name".equals(k)) {
+                    } else if ("model name".equalsIgnoreCase(k)) {
                         name = v;
                     }
                 }
@@ -586,64 +630,73 @@ public final class EmulatorDetector {
         if (checkMultiTouch(context)) {
             flags++;
         }
-        if (checkOriginEmuFeature()) {
-            flags++;
-        }
-        if (checkHaimaEmuFeature()) {
-            flags++;
-        }
-        if (checkWenzhuoEmuFeature()) {
-            flags++;
-        }
-        if (checkXiaoyaoEmuFeature()) {
-            flags++;
-        }
-        if (checkBlueStackEmuFeature()) {
-            flags++;
-        }
-        if (checkYeshenEmuFeature()) {
-            flags++;
-        }
-        if (checkTiantianEmuFeature()) {
-            flags++;
-        }
-        if (checkVboxFeature()) {
-            flags++;
-        }
-        if (checkGenymotionFeature()) {
-            flags++;
-        }
-        if (checkQemuFeature()) {
-            flags++;
-        }
-        if (checkCpuInfo()) {
-            flags++;
-        }
-        if (checkDeviceInfo()) {
-            flags++;
-        }
-        if (checkNetworkOperatorName(context)) {
-            flags++;
-        }
-        if (checkAdvanced()) {
-            flags++;
-        }
-        if (checkPackageName()) {
-            flags++;
-        }
 
         log("doCheckEmu(): " + flags + " (thresholds: " + MIN_EMU_FLAGS_THRESHOLD + ")");
         if (flags > 0) {
             U.putJsonSafed(jEmu, "fl", flags);
         }
-        return flags >= MIN_EMU_FLAGS_THRESHOLD;
+
+        if (flags >= MIN_EMU_FLAGS_THRESHOLD) {
+            return true;
+        }
+
+        if (checkEmuFeature()) {
+            return true;
+        }
+
+//        if (checkQemuFeature()) {
+//            return true;
+//        }
+//        if (checkHaimaEmuFeature()) {
+//            return true;
+//        }
+//        if (checkWenzhuoEmuFeature()) {
+//            return true;
+//        }
+//        if (checkXiaoyaoEmuFeature()) {
+//            return true;
+//        }
+//        if (checkBlueStackEmuFeature()) {
+//            return true;
+//        }
+//        if (checkYeshenEmuFeature()) {
+//            return true;
+//        }
+//        if (checkTiantianEmuFeature()) {
+//            return true;
+//        }
+//        if (checkVboxFeature()) {
+//            return true;
+//        }
+//        if (checkGenymotionFeature()) {
+//            return true;
+//        }
+
+        if (checkCpuInfo()) {
+            return true;
+        }
+        if (checkDeviceInfo()) {
+            return true;
+        }
+        if (checkNetworkOperatorName(context)) {
+            return true;
+        }
+        if (checkAdvanced()) {
+            return true;
+        }
+        if (checkPackageName()) {
+            return true;
+        }
+
+        return false;
     }
 
     private boolean checkAdvanced() {
         boolean result = /*checkTelephony()
-                ||*/ checkFiles(GENY_FILES, "Geny")
+                || checkFiles(GENY_FILES, "Geny")
                 || checkFiles(ANDY_FILES, "Andy")
                 || checkFiles(NOX_FILES, "Nox")
+                ||*/ checkFiles(EMU_FILES, "Emus")
                 || checkFiles(PIPES, "Pipes")
                 || checkQEmuDrivers()
                 || checkIp()
@@ -754,7 +807,7 @@ public final class EmulatorDetector {
                     for (String known_qemu_driver : QEMU_DRIVERS) {
                         if (driver_data.contains(known_qemu_driver)) {
                             log(">>> Check QEmuDrivers is detected");
-                            U.putJsonSafed(jEmu, "qe", known_qemu_driver);
+                            U.putJsonSafed(jEmu, "qd", known_qemu_driver);
                             return true;
                         }
                     }
@@ -775,7 +828,7 @@ public final class EmulatorDetector {
         for (String file : targets) {
             if (U.fileExist(file)) {
                 log(">>> Check[" + type + "] " + file + " is detected");
-                U.putJsonSafed(jEmu, "pi", 1);
+                U.putJsonSafed(jEmu, "fd", 1);
                 return true;
             }
         }
@@ -829,12 +882,14 @@ public final class EmulatorDetector {
                 log(">>> netcfg data -> " + netData);
                 String[] array = netData.split("\n");
 
-                for (String lan : array) {
-                    if ((lan.contains("wlan0") || lan.contains("tunl0") || lan.contains("eth0"))
-                            && lan.contains(IP)) {
-                        log(">>> Check IP is detected");
-                        U.putJsonSafed(jEmu, "ip", 1);
-                        return true;
+                for (String ip : IPs) {
+                    for (String lan : array) {
+                        if ((lan.contains("wlan0") || lan.contains("tunl0") || lan.contains("eth0"))
+                                && lan.contains(ip)) {
+                            log(">>> Check " + ip + " is detected");
+                            U.putJsonSafed(jEmu, "ip", 1);
+                            return true;
+                        }
                     }
                 }
 
@@ -869,6 +924,32 @@ public final class EmulatorDetector {
                     .append("]")
                     .toString();
         }
+    }
+
+    static class EmuFeature {
+        String name;
+        String[] filePath;
+        String[] systemProperties;
+
+        EmuFeature(String name, String[] filePath, String[] systemProperties) {
+            this.name = name;
+            this.filePath = filePath;
+            this.systemProperties = systemProperties;
+        }
+
+        @Override
+        public String toString() {
+            return new StringBuilder()
+                    .append("[")
+                    .append(name)
+                    .append(" | ")
+                    .append(Arrays.asList(filePath))
+                    .append(" | ")
+                    .append(Arrays.asList(systemProperties))
+                    .append("]")
+                    .toString();
+        }
+
     }
 }
 
