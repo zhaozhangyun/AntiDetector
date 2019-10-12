@@ -139,7 +139,17 @@
         "androVM.vbox_dpi",
         "androVM.vbox_graph_mode"
       ],
-      "build_prop": []
+      "build_prop": [
+        {
+          "ro.hardware": "vbox86"
+        },
+        {
+          "ro.product.name": "vbox86p"
+        },
+        {
+          "ro.build.fingerprint": "vbox"
+        }
+      ]
     },
     {
       "name": "ttVM",
@@ -159,7 +169,20 @@
       "sys_prop": [
         "init.svc.noxd"
       ],
-      "build_prop": []
+      "build_prop": [
+        {
+          "ro.hardware": "nox"
+        },
+        {
+          "ro.product.name": "nox"
+        },
+        {
+          "ro.bootloader": "nox"
+        },
+        {
+          "ro.product.board": "nox"
+        }
+      ]
     },
     {
       "name": "bluestacks",
@@ -197,7 +220,11 @@
       "sys_prop": [
         "init.svc.droid4x"
       ],
-      "build_prop": []
+      "build_prop": [
+        {
+          "ro.product.model": "droid4x"
+        }
+      ]
     }
   ]
 }

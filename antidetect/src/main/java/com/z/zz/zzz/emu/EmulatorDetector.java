@@ -129,11 +129,11 @@ public final class EmulatorDetector {
 
         MIN_EMU_FLAGS_THRESHOLD = U.getJsonSafed(jData, "min_emu_flags_threshold");
         MIN_BUILD_THRESHOLD = U.getJsonSafed(jData, "min_build_threshold");
-        IPs = parseJsonToArray(jData, "ips");
-        QEMU_DRIVERS = parseJsonToArray(jData, "qemu_drivers");
-        PIPES = parseJsonToArray(jData, "pipes");
-        X86_FILES = parseJsonToArray(jData, "x86_files");
-        EMU_FILES = parseJsonToArray(jData, "emu_files");
+        IPs = convertJsonToArray(jData, "ips");
+        QEMU_DRIVERS = convertJsonToArray(jData, "qemu_drivers");
+        PIPES = convertJsonToArray(jData, "pipes");
+        X86_FILES = convertJsonToArray(jData, "x86_files");
+        EMU_FILES = convertJsonToArray(jData, "emu_files");
 
         JSONArray jProperties = U.getJsonSafed(jData, "properties");
         PROPERTIES = new Property[jProperties.length()];
@@ -150,47 +150,46 @@ public final class EmulatorDetector {
 
         MIN_PROPERTIES_THRESHOLD = U.getJsonSafed(jData, "min_properties_threshold");
 
-        String[] packages = parseJsonToArray(jData, "packages");
+        String[] packages = convertJsonToArray(jData, "packages");
         mListPackageName = Arrays.asList(packages);
 
-        PHONE_NUMBERS = parseJsonToArray(jData, "phone_numbers");
-        DEVICE_IDS = parseJsonToArray(jData, "device_id");
-        IMSI_IDS = parseJsonToArray(jData, "imsi");
-        BLUETOOTH_PATH = parseJsonToArray(jData, "bluetooth_path");
+        PHONE_NUMBERS = convertJsonToArray(jData, "phone_numbers");
+        DEVICE_IDS = convertJsonToArray(jData, "device_id");
+        IMSI_IDS = convertJsonToArray(jData, "imsi");
+        BLUETOOTH_PATH = convertJsonToArray(jData, "bluetooth_path");
 
         JSONArray jEmuFeatures = U.getJsonSafed(jData, "emu_features");
         EMU_FEATURES = new EmuFeature[jEmuFeatures.length()];
         for (int i = 0; i < jEmuFeatures.length(); i++) {
             JSONObject jo = U.getJsonSafed(jEmuFeatures, i);
             String name = U.getJsonSafed(jo, "name");
-            String[] filePath = parseJsonToArray(jo, "file_path");
-            String[] systemProperties = parseJsonToArray(jo, "sys_prop");
-            Map<String, String> buildProperties = parseJsonToMap(jo, "build_prop");
+            log("Parse (" + name + ") file path");
+            String[] filePath = convertJsonToArray(jo, "file_path");
+            log("Parse (" + name + ") system properties");
+            String[] systemProperties = convertJsonToArray(jo, "sys_prop");
+            log("Parse (" + name + ") build properties");
+            Map<String, String> buildProperties = convertJsonToMap(jo, "build_prop");
             EmuFeature ef = new EmuFeature(name, filePath, systemProperties, buildProperties);
             EMU_FEATURES[i] = ef;
         }
         log("@@@@@@@@@@@ Parse emu_pattern.json finished.");
     }
 
-    private String[] parseJsonToArray(JSONObject data, String name) {
+    private String[] convertJsonToArray(JSONObject data, String name) {
         JSONArray ja = U.getJsonSafed(data, name);
-        if (ja.length() > 0) {
-            log("call parseJsonToArray(): name=" + name);
-        }
         String[] content = new String[ja.length()];
         for (int i = 0; i < ja.length(); i++) {
             content[i] = U.getJsonSafed(ja, i);
-            log("   -- " + content[i]);
+        }
+        if (content.length > 0) {
+            log("Parse Array(" + name + "): " + Arrays.asList(content));
         }
         return content;
     }
 
-    private Map<String, String> parseJsonToMap(JSONObject data, String name) {
+    private Map<String, String> convertJsonToMap(JSONObject data, String name) {
         Map<String, String> result = new HashMap<>();
         JSONArray ja = U.getJsonSafed(data, name);
-        if (ja.length() > 0) {
-            log("call parseJsonToMap(): name=" + name);
-        }
         for (int i = 0; i < ja.length(); i++) {
             JSONObject jo = U.getJsonSafed(ja, i);
             Iterator<String> it = jo.keys();
@@ -198,8 +197,10 @@ public final class EmulatorDetector {
                 String key = it.next();
                 String value = U.getJsonSafed(jo, key);
                 result.put(key, value);
-                log("   -- " + result);
             }
+        }
+        if (result.size() > 0) {
+            log("Parse Map(" + name + "): " + result);
         }
         return result;
     }
@@ -277,22 +278,25 @@ public final class EmulatorDetector {
             String[] systemProperties = ef.systemProperties;
             Map<String, String> buildProperties = ef.buildProperties;
 
+            log("Check (" + name + ") file path");
             for (String path : filePath) {
                 if (U.fileExist(path)) {
-                    log("Check [" + name + "] is detected");
+                    log("Check [" + path + "] is detected");
                     U.putJsonSafed(jEmu, "fe", 1);
                     return true;
                 }
             }
 
+            log("Check (" + name + ") system properties");
             for (String sysProp : systemProperties) {
-                if (!TextUtils.isEmpty(U.getSystemProperties(sysProp))) {
-                    log("Check [" + name + "] is detected");
+                if (!Build.UNKNOWN.equals(U.getSystemProperties(sysProp))) {
+                    log("Check [" + sysProp + "] is detected");
                     U.putJsonSafed(jEmu, "fe", 1);
                     return true;
                 }
             }
 
+            log("Check (" + name + ") build properties");
             Set<String> set = buildProperties.keySet();
             Iterator<String> it = set.iterator();
             while (it.hasNext()) {
@@ -300,7 +304,7 @@ public final class EmulatorDetector {
                 String value = buildProperties.get(key);
                 if (!TextUtils.isEmpty(key) && !TextUtils.isEmpty(value)) {
                     if (U.getSystemProperties(key).toLowerCase().contains(value.toLowerCase())) {
-                        log("Check [" + name + "] is detected");
+                        log("Check [" + key + "] is detected");
                         U.putJsonSafed(jEmu, "fe", 1);
                         return true;
                     }
@@ -499,7 +503,6 @@ public final class EmulatorDetector {
         if (!TextUtils.isEmpty(fingerprint)) {
             if (fingerprint.toLowerCase().contains("generic")
                     || fingerprint.toLowerCase().contains("x86")
-                    || fingerprint.toLowerCase().contains("vbox")
                     || fingerprint.toLowerCase().contains("test-keys")) {
                 U.putJsonSafed(jBuild, "fp", 1);
                 flags++;
@@ -510,9 +513,6 @@ public final class EmulatorDetector {
         String model = Build.MODEL;
         if (!TextUtils.isEmpty(model)) {
             if (model.toLowerCase().contains("google_sdk")
-                    || model.equalsIgnoreCase("google_sdk")
-                    || model.equalsIgnoreCase("sdk")
-                    || model.toLowerCase().contains("droid4x")
                     || model.toLowerCase().contains("emulator")
                     || model.contains("Android SDK built for x86")) {
                 U.putJsonSafed(jBuild, "mo", 1);
@@ -521,13 +521,13 @@ public final class EmulatorDetector {
         }
 
         // MANUFACTURER
-        String manufacturer = Build.MANUFACTURER;
-        if (!TextUtils.isEmpty(manufacturer)) {
-            if (manufacturer.toLowerCase().contains("genymotion")) {
-                U.putJsonSafed(jBuild, "ma", 1);
-                flags++;
-            }
-        }
+//        String manufacturer = Build.MANUFACTURER;
+//        if (!TextUtils.isEmpty(manufacturer)) {
+//            if (manufacturer.toLowerCase().contains("genymotion")) {
+//                U.putJsonSafed(jBuild, "ma", 1);
+//                flags++;
+//            }
+//        }
 
         // BRAND
         String brand = Build.BRAND;
@@ -542,8 +542,7 @@ public final class EmulatorDetector {
         // DEVICE
         String device = Build.DEVICE;
         if (!TextUtils.isEmpty(device)) {
-            if (device.toLowerCase().contains("generic")
-                    || device.toLowerCase().contains("vbox")) {
+            if (device.toLowerCase().contains("generic")) {
                 U.putJsonSafed(jBuild, "de", 1);
                 flags++;
             }
@@ -552,9 +551,7 @@ public final class EmulatorDetector {
         // HARDWARE
         String hardware = Build.HARDWARE;
         if (!TextUtils.isEmpty(hardware)) {
-            if (hardware.equalsIgnoreCase("goldfish")
-                    || hardware.equalsIgnoreCase("vbox86")
-                    || hardware.toLowerCase().contains("nox")) {
+            if (hardware.equalsIgnoreCase("goldfish")) {
                 U.putJsonSafed(jBuild, "hw", 1);
                 flags++;
             }
@@ -565,11 +562,8 @@ public final class EmulatorDetector {
         if (!TextUtils.isEmpty(product)) {
             if (product.toLowerCase().contains("sdk")
                     || product.toLowerCase().contains("x86")
-                    || product.toLowerCase().contains("vbox")
                     || product.equalsIgnoreCase("google_sdk")
-                    || product.equalsIgnoreCase("sdk_x86")
-                    || product.equalsIgnoreCase("vbox86p")
-                    || product.toLowerCase().contains("nox")) {
+                    || product.equalsIgnoreCase("sdk_x86")) {
                 U.putJsonSafed(jBuild, "pr", 1);
                 flags++;
             }
@@ -578,29 +572,27 @@ public final class EmulatorDetector {
         // BOARD
         String board = Build.BOARD;
         if (!TextUtils.isEmpty(board)) {
-            if (board.equalsIgnoreCase(Build.UNKNOWN)
-                    || board.toLowerCase().contains("nox")) {
+            if (board.equalsIgnoreCase(Build.UNKNOWN)) {
                 U.putJsonSafed(jBuild, "bo", 1);
                 flags++;
             }
         }
 
         // BOOTLOADER
-        String bootloader = Build.BOOTLOADER;
-        if (!TextUtils.isEmpty(bootloader)) {
-            if (/*bootloader.equalsIgnoreCase(Build.UNKNOWN)
-                    || */bootloader.toLowerCase().contains("nox")) {
-                U.putJsonSafed(jBuild, "bl", 1);
-                flags++;
-            }
-        }
+//        String bootloader = Build.BOOTLOADER;
+//        if (!TextUtils.isEmpty(bootloader)) {
+//            if (/*bootloader.equalsIgnoreCase(Build.UNKNOWN)) {
+//                U.putJsonSafed(jBuild, "bl", 1);
+//                flags++;
+//            }
+//        }
 
         // SERIAL
         String serial = U.getBuildSerial(sContext);
         L.i(TAG, ">>> Build.SERIAL: " + serial + ", SDK_INT: " + Build.VERSION.SDK_INT);
         if (!TextUtils.isEmpty(serial)) {
             if (serial.toLowerCase().contains("android")
-                    || serial.toLowerCase().contains("nox")
+//                    || serial.toLowerCase().contains("nox")
                     || serial.toLowerCase().contains("emulator")) {
                 U.putJsonSafed(jBuild, "se", 1);
                 flags++;
@@ -904,7 +896,7 @@ public final class EmulatorDetector {
 
         for (Property property : PROPERTIES) {
             String property_value = U.getSystemProperties(property.name);
-            if (TextUtils.isEmpty(property.seek_value) && !TextUtils.isEmpty(property_value)) {
+            if (TextUtils.isEmpty(property.seek_value) && !Build.UNKNOWN.equals(property_value)) {
                 log(">>> Check [" + property + "] is detected");
                 found_props++;
             }

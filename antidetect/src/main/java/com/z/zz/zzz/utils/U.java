@@ -28,13 +28,12 @@ public class U {
     }
 
     public static String getSystemProperties(String key) {
-        String value = "";
+        String value = null;
         try {
             Class<?> c = Class.forName("android.os.SystemProperties");
-            Method get = c.getMethod("get", String.class);
-            value = (String) (get.invoke(c, key));
-            L.v(TAG, "getSystemProperties(" + key + "): " +
-                    (TextUtils.isEmpty(value) ? "n/a" : value));
+            Method get = c.getMethod("get", String.class, String.class);
+            value = (String) get.invoke(c, key, Build.UNKNOWN);
+            L.v(TAG, "getSystemProperties(" + key + "): " + value);
         } catch (Exception e) {
             L.e(TAG, "getSystemProperties error: ", e);
         }
