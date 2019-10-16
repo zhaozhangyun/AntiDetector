@@ -35,19 +35,6 @@ import static com.z.zz.zzz.AntiDetector.TAG;
 
 public final class EmulatorDetector {
 
-    //    private static final String[] GENY_FILES = {
-//            "/dev/socket/genyd",
-//            "/dev/socket/baseband_genyd"
-//    };
-//    private static final String[] ANDY_FILES = {
-//            "fstab.andy",
-//            "ueventd.andy.rc"
-//    };
-//    private static final String[] NOX_FILES = {
-//            "fstab.nox",
-//            "init.nox.rc",
-//            "ueventd.nox.rc"
-//    };
     private static final String EMU_PATTERN_FILE_NAME = "emu_pattern.json";
     public static int MIN_EMU_FLAGS_THRESHOLD = 3;
     private static Property[] PROPERTIES = {};
@@ -177,6 +164,9 @@ public final class EmulatorDetector {
 
     private String[] convertJsonToArray(JSONObject data, String name) {
         JSONArray ja = U.getJsonSafed(data, name);
+        if (ja == null) {
+            return new String[0];
+        }
         String[] content = new String[ja.length()];
         for (int i = 0; i < ja.length(); i++) {
             content[i] = U.getJsonSafed(ja, i);
@@ -190,6 +180,9 @@ public final class EmulatorDetector {
     private Map<String, String> convertJsonToMap(JSONObject data, String name) {
         Map<String, String> result = new HashMap<>();
         JSONArray ja = U.getJsonSafed(data, name);
+        if (ja == null) {
+            return result;
+        }
         for (int i = 0; i < ja.length(); i++) {
             JSONObject jo = U.getJsonSafed(ja, i);
             Iterator<String> it = jo.keys();
@@ -314,105 +307,6 @@ public final class EmulatorDetector {
 
         return false;
     }
-
-    // 海马模拟器特征文件
-//    private boolean checkHaimaEmuFeature() {
-//        if (U.fileExist("/system/lib/libdroid4x.so")
-//                || U.fileExist("/system/bin/droid4x-prop")
-//                || !TextUtils.isEmpty(U.getSystemProperties("init.svc.droid4x"))) {
-//            U.putJsonSafed(jEmu, "hm", 1);
-//            return true;
-//        }
-//        return false;
-//    }
-//
-//    // 文卓爷模拟器特征文件
-//    private boolean checkWenzhuoEmuFeature() {
-//        if (U.fileExist("/system/bin/windroyed")) {
-//            U.putJsonSafed(jEmu, "wz", 1);
-//            return true;
-//        }
-//        return false;
-//    }
-//
-//    // 逍遥模拟器特征文件
-//    private boolean checkXiaoyaoEmuFeature() {
-//        if (U.fileExist("/system/bin/microvirt-prop")
-//                || U.fileExist("/system/bin/microvirtd")
-//                || !TextUtils.isEmpty(U.getSystemProperties("init.svc.microvirtd"))) {
-//            U.putJsonSafed(jEmu, "xy", 1);
-//            return true;
-//        }
-//        return false;
-//    }
-//
-//    // BlueStack模拟器特征文件
-//    private boolean checkBlueStackEmuFeature() {
-//        if (U.fileExist("/data/.bluestacks.prop")) {
-//            U.putJsonSafed(jEmu, "bs", 1);
-//            return true;
-//        }
-//        return false;
-//    }
-//
-//    // 夜神模拟器特征文件
-//    private boolean checkYeshenEmuFeature() {
-//        if (U.fileExist("/system/bin/nox-prop")
-//                || !TextUtils.isEmpty(U.getSystemProperties("init.svc.noxd"))) {
-//            U.putJsonSafed(jEmu, "ys", 1);
-//            return true;
-//        }
-//        return false;
-//    }
-//
-//    // 天天模拟器特征文件
-//    private boolean checkTiantianEmuFeature() {
-//        if (U.fileExist("/system/bin/ttVM-prop")
-//                || !TextUtils.isEmpty(U.getSystemProperties("init.svc.ttVM_x86-setup"))) {
-//            U.putJsonSafed(jEmu, "tt", 1);
-//            return true;
-//        }
-//        return false;
-//    }
-//
-//    // Vbox特征
-//    private boolean checkVboxFeature() {
-//        if (!TextUtils.isEmpty(U.getSystemProperties("init.svc.vbox86-setup"))
-//                || !TextUtils.isEmpty(U.getSystemProperties("androVM.vbox_dpi"))
-//                || !TextUtils.isEmpty(U.getSystemProperties("androVM.vbox_graph_mode"))) {
-//            U.putJsonSafed(jEmu, "vb", 1);
-//            return true;
-//        }
-//        return false;
-//    }
-//
-//    // Genymotion特征
-//    private boolean checkGenymotionFeature() {
-//        if (U.getSystemProperties("ro.product.manufacturer").contains("Genymotion")) {
-//            U.putJsonSafed(jEmu, "gy", 1);
-//            return true;
-//        }
-//        return false;
-//    }
-//
-//    // Qemu特征
-//    private boolean checkQemuFeature() {
-//        String[] known_files = {"/system/lib/libc_malloc_debug_qemu.so", "/sys/qemu_trace",
-//                "/system/bin/qemu-props", "/system/bin/qemu_props"};
-//        for (String pipe : known_files) {
-//            if (U.fileExist(pipe)) {
-//                log("checkQemuFeature: " + pipe);
-//                U.putJsonSafed(jEmu, "qe", 1);
-//                return true;
-//            }
-//        }
-//        if (!TextUtils.isEmpty(U.getSystemProperties("init.svc.qemud"))
-//                || !TextUtils.isEmpty(U.getSystemProperties("ro.kernel.android.qemud"))) {
-//            U.putJsonSafed(jEmu, "qe", 1);
-//            return true;
-//        }
-//        return false;
-//    }
 
     // CPU信息
     private boolean checkCpuInfo() {
@@ -673,34 +567,6 @@ public final class EmulatorDetector {
             }
         }
 
-//        if (checkQemuFeature()) {
-//            return true;
-//        }
-//        if (checkHaimaEmuFeature()) {
-//            return true;
-//        }
-//        if (checkWenzhuoEmuFeature()) {
-//            return true;
-//        }
-//        if (checkXiaoyaoEmuFeature()) {
-//            return true;
-//        }
-//        if (checkBlueStackEmuFeature()) {
-//            return true;
-//        }
-//        if (checkYeshenEmuFeature()) {
-//            return true;
-//        }
-//        if (checkTiantianEmuFeature()) {
-//            return true;
-//        }
-//        if (checkVboxFeature()) {
-//            return true;
-//        }
-//        if (checkGenymotionFeature()) {
-//            return true;
-//        }
-
         if (checkCpuInfo()) {
             if (isDebug) {
                 result = true;
@@ -743,9 +609,6 @@ public final class EmulatorDetector {
             return checkTelephony()
                     || checkIp()
                     || checkPackageName()
-                /*|| checkFiles(GENY_FILES, "Geny")
-                || checkFiles(ANDY_FILES, "Andy")
-                || checkFiles(NOX_FILES, "Nox")*/
                     || checkFiles(EMU_FILES)
                     || checkFiles(PIPES)
                     || (checkQEmuProps() && checkFiles(X86_FILES))
@@ -959,7 +822,7 @@ public final class EmulatorDetector {
         return packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY);
     }
 
-    static class Property {
+    class Property {
         String name;
         String seek_value;
 
@@ -980,7 +843,7 @@ public final class EmulatorDetector {
         }
     }
 
-    static class EmuFeature {
+    class EmuFeature {
         String name;
         String[] filePath;
         String[] systemProperties;

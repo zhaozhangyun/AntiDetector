@@ -118,13 +118,10 @@
       "sys_prop": [
         "init.svc.qemud",
         "ro.kernel.android.qemud"
-      ],
-      "build_prop": []
+      ]
     },
     {
       "name": "genymotion",
-      "file_path": [],
-      "sys_prop": [],
       "build_prop": [
         {
           "ro.product.manufacturer": "Genymotion"
@@ -133,7 +130,6 @@
     },
     {
       "name": "vbox",
-      "file_path": [],
       "sys_prop": [
         "init.svc.vbox86-setup",
         "androVM.vbox_dpi",
@@ -158,8 +154,7 @@
       ],
       "sys_prop": [
         "init.svc.ttVM_x86-setup"
-      ],
-      "build_prop": []
+      ]
     },
     {
       "name": "nox",
@@ -188,9 +183,7 @@
       "name": "bluestacks",
       "file_path": [
         "/data/.bluestacks.prop"
-      ],
-      "sys_prop": [],
-      "build_prop": []
+      ]
     },
     {
       "name": "microvirt",
@@ -200,16 +193,13 @@
       "sys_prop": [
         "/system/bin/microvirtd",
         "init.svc.microvirtd"
-      ],
-      "build_prop": []
+      ]
     },
     {
       "name": "windroyed",
       "file_path": [
         "/system/bin/windroyed"
-      ],
-      "sys_prop": [],
-      "build_prop": []
+      ]
     },
     {
       "name": "droid4x",
