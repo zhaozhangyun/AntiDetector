@@ -23,13 +23,17 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.z.zz.zzz.AntiDetector.TAG;
 
@@ -56,6 +60,7 @@ public final class EmulatorDetector {
     private static JSONObject jEmu = new JSONObject();
     private boolean isDebug;
     private List<String> mListPackageName;
+    private Map<String, String> mProps = new HashMap<>();
 
     private EmulatorDetector(Context context) {
         sContext = context;
@@ -101,17 +106,27 @@ public final class EmulatorDetector {
 
     private void parseEmuPattern(Context context) {
         JSONObject jData = null;
+        InputStream is = null;
         try {
-            InputStream is = context.getResources().getAssets().open(EMU_PATTERN_FILE_NAME);
+            is = context.getResources().getAssets().open(EMU_PATTERN_FILE_NAME);
             int size = is.available();
             byte[] buffer = new byte[size];
             is.read(buffer);
-            is.close();
             String content = new String(buffer);
             jData = new JSONObject(content);
-            log("jdata: " + jData);
         } catch (Exception e) {
-            L.e(TAG, "parse emu_pattern.json error", e);
+            if (isDebug) {
+                L.e(TAG, "parseEmuPattern error: ", e);
+            } else {
+                L.w(TAG, "parseEmuPattern error: " + e);
+            }
+        } finally {
+            if (is != null) {
+                try {
+                    is.close();
+                } catch (IOException e) {
+                }
+            }
         }
 
         MIN_EMU_FLAGS_THRESHOLD = U.getJsonSafed(jData, "min_emu_flags_threshold");
@@ -150,16 +165,13 @@ public final class EmulatorDetector {
         for (int i = 0; i < jEmuFeatures.length(); i++) {
             JSONObject jo = U.getJsonSafed(jEmuFeatures, i);
             String name = U.getJsonSafed(jo, "name");
-            log("Parse (" + name + ") file path");
             String[] filePath = convertJsonToArray(jo, "file_path");
-            log("Parse (" + name + ") system properties");
             String[] systemProperties = convertJsonToArray(jo, "sys_prop");
-            log("Parse (" + name + ") build properties");
             Map<String, String> buildProperties = convertJsonToMap(jo, "build_prop");
             EmuFeature ef = new EmuFeature(name, filePath, systemProperties, buildProperties);
             EMU_FEATURES[i] = ef;
         }
-        log("@@@@@@@@@@@ Parse emu_pattern.json finished.");
+        log("@@@@@@@@@@@ Parse " + EMU_PATTERN_FILE_NAME + " finished.");
     }
 
     private String[] convertJsonToArray(JSONObject data, String name) {
@@ -170,9 +182,6 @@ public final class EmulatorDetector {
         String[] content = new String[ja.length()];
         for (int i = 0; i < ja.length(); i++) {
             content[i] = U.getJsonSafed(ja, i);
-        }
-        if (content.length > 0) {
-            log("Parse Array(" + name + "): " + Arrays.asList(content));
         }
         return content;
     }
@@ -191,9 +200,6 @@ public final class EmulatorDetector {
                 String value = U.getJsonSafed(jo, key);
                 result.put(key, value);
             }
-        }
-        if (result.size() > 0) {
-            log("Parse Map(" + name + "): " + result);
         }
         return result;
     }
@@ -271,25 +277,22 @@ public final class EmulatorDetector {
             String[] systemProperties = ef.systemProperties;
             Map<String, String> buildProperties = ef.buildProperties;
 
-            log("Check (" + name + ") file path");
             for (String path : filePath) {
                 if (U.fileExist(path)) {
-                    log("Check [" + path + "] is detected");
+                    log("Check (" + name + ") file {" + path + "} is detected");
                     U.putJsonSafed(jEmu, "fe", 1);
                     return true;
                 }
             }
 
-            log("Check (" + name + ") system properties");
             for (String sysProp : systemProperties) {
                 if (!Build.UNKNOWN.equals(U.getSystemProperties(sysProp))) {
-                    log("Check [" + sysProp + "] is detected");
+                    log("Check (" + name + ")system properties {" + sysProp + "} is detected");
                     U.putJsonSafed(jEmu, "fe", 1);
                     return true;
                 }
             }
 
-            log("Check (" + name + ") build properties");
             Set<String> set = buildProperties.keySet();
             Iterator<String> it = set.iterator();
             while (it.hasNext()) {
@@ -297,7 +300,7 @@ public final class EmulatorDetector {
                 String value = buildProperties.get(key);
                 if (!TextUtils.isEmpty(key) && !TextUtils.isEmpty(value)) {
                     if (U.getSystemProperties(key).toLowerCase().contains(value.toLowerCase())) {
-                        log("Check [" + key + "] is detected");
+                        log("Check (" + name + ") build properties {" + key + "} is detected");
                         U.putJsonSafed(jEmu, "fe", 1);
                         return true;
                     }
@@ -313,7 +316,7 @@ public final class EmulatorDetector {
         String cpu = getCPUInfo();
         if (!TextUtils.isEmpty(cpu)) {
             if (cpu.toLowerCase().contains("intel") || cpu.toLowerCase().contains("amd")) {
-                log("Check [" + cpu + "] is detected");
+                log("Check CpuInfo {" + cpu + "} is detected");
                 U.putJsonSafed(jEmu, "ci", 1);
                 return true;
             }
@@ -329,7 +332,7 @@ public final class EmulatorDetector {
                     || device.toLowerCase().contains("tencent")
                     || device.toLowerCase().contains("ttvm")
                     || device.toLowerCase().contains("tiantian")) {
-                log("Check [" + device + "] is detected");
+                log("Check DeviceInfo {" + device + "} is detected");
                 U.putJsonSafed(jEmu, "di", 1);
                 return true;
             }
@@ -339,10 +342,12 @@ public final class EmulatorDetector {
 
     private String getCPUInfo() {
         String name = "";
+        InputStreamReader fr = null;
+        BufferedReader br = null;
         try {
-            FileReader fr = new FileReader("/proc/cpuinfo");
-            BufferedReader br = new BufferedReader(fr);
-            String line = null;
+            fr = new FileReader("/proc/cpuinfo");
+            br = new BufferedReader(fr);
+            String line;
 
             while (true) {
                 line = br.readLine();
@@ -362,7 +367,25 @@ public final class EmulatorDetector {
                 }
             }
         } catch (Exception e) {
-            L.e(TAG, "getCPUInfo error: ", e);
+            if (isDebug) {
+                L.e(TAG, "getCPUInfo error: ", e);
+            } else {
+                L.w(TAG, "getCPUInfo error: " + e);
+            }
+        } finally {
+            if (fr != null) {
+                try {
+                    fr.close();
+                } catch (IOException e) {
+                }
+            }
+
+            if (br != null) {
+                try {
+                    br.close();
+                } catch (IOException e) {
+                }
+            }
         }
         return name;
     }
@@ -370,19 +393,35 @@ public final class EmulatorDetector {
     private String getDeviceInfo() {
         String result = "";
         ProcessBuilder cmd;
+        Process process = null;
+        InputStream in = null;
 
         try {
             String[] args = {"/system/bin/cat", "/proc/version"};
             cmd = new ProcessBuilder(args);
-            Process process = cmd.start();
-            InputStream in = process.getInputStream();
+            process = cmd.start();
+            in = process.getInputStream();
             byte[] re = new byte[256];
             while (in.read(re) != -1) {
                 result = result + new String(re);
             }
-            in.close();
         } catch (Exception e) {
-            L.e(TAG, "getDeviceInfo error: ", e);
+            if (isDebug) {
+                L.e(TAG, "getDeviceInfo error: ", e);
+            } else {
+                L.w(TAG, "getDeviceInfo error: " + e);
+            }
+        } finally {
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (IOException e) {
+                }
+            }
+
+            if (process != null) {
+                process.destroy();
+            }
         }
         return result.trim();
     }
@@ -396,7 +435,6 @@ public final class EmulatorDetector {
         String fingerprint = Build.FINGERPRINT;
         if (!TextUtils.isEmpty(fingerprint)) {
             if (fingerprint.toLowerCase().contains("generic")
-                    || fingerprint.toLowerCase().contains("x86")
                     || fingerprint.toLowerCase().contains("test-keys")) {
                 U.putJsonSafed(jBuild, "fp", 1);
                 flags++;
@@ -413,15 +451,6 @@ public final class EmulatorDetector {
                 flags++;
             }
         }
-
-        // MANUFACTURER
-//        String manufacturer = Build.MANUFACTURER;
-//        if (!TextUtils.isEmpty(manufacturer)) {
-//            if (manufacturer.toLowerCase().contains("genymotion")) {
-//                U.putJsonSafed(jBuild, "ma", 1);
-//                flags++;
-//            }
-//        }
 
         // BRAND
         String brand = Build.BRAND;
@@ -454,9 +483,7 @@ public final class EmulatorDetector {
         // PRODUCT
         String product = Build.PRODUCT;
         if (!TextUtils.isEmpty(product)) {
-            if (product.toLowerCase().contains("sdk")
-                    || product.toLowerCase().contains("x86")
-                    || product.equalsIgnoreCase("google_sdk")
+            if (product.equalsIgnoreCase("google_sdk")
                     || product.equalsIgnoreCase("sdk_x86")) {
                 U.putJsonSafed(jBuild, "pr", 1);
                 flags++;
@@ -472,21 +499,11 @@ public final class EmulatorDetector {
             }
         }
 
-        // BOOTLOADER
-//        String bootloader = Build.BOOTLOADER;
-//        if (!TextUtils.isEmpty(bootloader)) {
-//            if (/*bootloader.equalsIgnoreCase(Build.UNKNOWN)) {
-//                U.putJsonSafed(jBuild, "bl", 1);
-//                flags++;
-//            }
-//        }
-
         // SERIAL
         String serial = U.getBuildSerial(sContext);
         L.i(TAG, ">>> Build.SERIAL: " + serial + ", SDK_INT: " + Build.VERSION.SDK_INT);
         if (!TextUtils.isEmpty(serial)) {
             if (serial.toLowerCase().contains("android")
-//                    || serial.toLowerCase().contains("nox")
                     || serial.toLowerCase().contains("emulator")) {
                 U.putJsonSafed(jBuild, "se", 1);
                 flags++;
@@ -546,7 +563,7 @@ public final class EmulatorDetector {
             flags++;
         }
 
-        log("doCheckEmu(): " + flags + " (thresholds: " + MIN_EMU_FLAGS_THRESHOLD + ")");
+        log("CheckEmu flags: " + flags + " (thresholds: " + MIN_EMU_FLAGS_THRESHOLD + ")");
         if (flags > 0) {
             U.putJsonSafed(jEmu, "fl", flags);
         }
@@ -604,6 +621,7 @@ public final class EmulatorDetector {
             boolean isPipe = checkFiles(PIPES);
             boolean isX86File = checkQEmuProps() && checkFiles(X86_FILES);
             boolean isQEmuDrivers = checkQEmuDrivers();
+            executeGetProp();
             return isTelePhony || isIp || isPackageName || isEmuFile || isPipe || isX86File || isQEmuDrivers;
         } else {
             return checkTelephony()
@@ -658,7 +676,7 @@ public final class EmulatorDetector {
             String phoneNumber = telephonyManager.getLine1Number();
             for (String known_number : PHONE_NUMBERS) {
                 if (known_number.equalsIgnoreCase(phoneNumber)) {
-                    log("Check [" + known_number + "] is detected");
+                    log("Check PhoneNumber {" + known_number + "} is detected");
                     U.putJsonSafed(jEmu, "pn", 1);
                     return true;
                 }
@@ -675,7 +693,7 @@ public final class EmulatorDetector {
             String deviceId = telephonyManager.getDeviceId();
             for (String known_deviceId : DEVICE_IDS) {
                 if (known_deviceId.equalsIgnoreCase(deviceId)) {
-                    log("Check [" + known_deviceId + "] is detected");
+                    log("Check DeviceId {" + known_deviceId + "} is detected");
                     U.putJsonSafed(jEmu, "de", 1);
                     return true;
                 }
@@ -692,7 +710,7 @@ public final class EmulatorDetector {
             String imsi = telephonyManager.getSubscriberId();
             for (String known_imsi : IMSI_IDS) {
                 if (known_imsi.equalsIgnoreCase(imsi)) {
-                    log("Check [" + known_imsi + "] is detected");
+                    log("Check IMSI {" + known_imsi + "} is detected");
                     U.putJsonSafed(jEmu, "im", 1);
                     return true;
                 }
@@ -705,7 +723,7 @@ public final class EmulatorDetector {
         String operatorName = ((TelephonyManager)
                 sContext.getSystemService(Context.TELEPHONY_SERVICE)).getNetworkOperatorName();
         if (operatorName.equalsIgnoreCase("android")) {
-            log("Check [" + operatorName + "] is detected");
+            log("Check Operator {" + operatorName + "} is detected");
             U.putJsonSafed(jEmu, "no", 1);
             return true;
         }
@@ -725,17 +743,23 @@ public final class EmulatorDetector {
                     String driver_data = new String(data);
                     for (String known_qemu_driver : QEMU_DRIVERS) {
                         if (driver_data.contains(known_qemu_driver)) {
-                            log(">>> Check [" + known_qemu_driver + "] is detected");
+                            log(">>> Check QEmu Drivers {" + known_qemu_driver + "} is detected");
                             U.putJsonSafed(jEmu, "qd", known_qemu_driver);
                             return true;
                         }
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    if (isDebug) {
+                        L.e(TAG, "checkQEmuDrivers error: ", e);
+                    } else {
+                        L.w(TAG, "checkQEmuDrivers error: " + e);
+                    }
                 } finally {
-                    try {
-                        is.close();
-                    } catch (Exception e) {
+                    if (is != null) {
+                        try {
+                            is.close();
+                        } catch (IOException e) {
+                        }
                     }
                 }
             }
@@ -746,7 +770,7 @@ public final class EmulatorDetector {
     private boolean checkFiles(String[] targets) {
         for (String file : targets) {
             if (U.fileExist(file)) {
-                log(">>> Check [" + file + "] is detected");
+                log(">>> Check file {" + file + "} is detected");
                 U.putJsonSafed(jEmu, "fd", 1);
                 return true;
             }
@@ -760,11 +784,11 @@ public final class EmulatorDetector {
         for (Property property : PROPERTIES) {
             String property_value = U.getSystemProperties(property.name);
             if (TextUtils.isEmpty(property.seek_value) && !Build.UNKNOWN.equals(property_value)) {
-                log(">>> Check [" + property + "] is detected");
+                log(">>> Check QEmu Properties {" + property + "} is detected");
                 found_props++;
             }
             if (!TextUtils.isEmpty(property.seek_value) && property_value.contains(property.seek_value)) {
-                log(">>> Check [" + property + "] is detected");
+                log(">>> Check QEmu Properties {" + property + "} is detected");
                 found_props++;
             }
         }
@@ -781,19 +805,36 @@ public final class EmulatorDetector {
         if (ContextCompat.checkSelfPermission(sContext, Manifest.permission.INTERNET)
                 == PackageManager.PERMISSION_GRANTED) {
             String[] args = {"/system/bin/netcfg"};
+            InputStream in = null;
+            Process process = null;
             StringBuilder sb = new StringBuilder();
             try {
                 ProcessBuilder pb = new ProcessBuilder(args);
                 pb.directory(new File("/system/bin/"));
                 pb.redirectErrorStream(true);
-                Process process = pb.start();
-                InputStream in = process.getInputStream();
+                process = pb.start();
+                in = process.getInputStream();
                 byte[] re = new byte[1024];
                 while (in.read(re) != -1) {
                     sb.append(new String(re));
                 }
-                in.close();
-            } catch (Exception ex) {
+            } catch (Exception e) {
+                if (isDebug) {
+                    L.e(TAG, "checkIp error: ", e);
+                } else {
+                    L.w(TAG, "checkIp error: " + e);
+                }
+            } finally {
+                if (in != null) {
+                    try {
+                        in.close();
+                    } catch (IOException e) {
+                    }
+                }
+
+                if (process != null) {
+                    process.destroy();
+                }
             }
 
             String netData = sb.toString();
@@ -806,12 +847,39 @@ public final class EmulatorDetector {
                     for (String lan : array) {
                         if ((lan.contains("wlan0") || lan.contains("tunl0") || lan.contains("eth0"))
                                 && lan.contains(ip)) {
-                            log(">>> Check [" + ip + "] is detected");
+                            log(">>> Check IP {" + ip + "} is detected");
                             U.putJsonSafed(jEmu, "ip", 1);
                             return true;
                         }
                     }
                 }
+            }
+        }
+        return false;
+    }
+
+    private boolean executeGetProp() {
+        try {
+            String regs = "([\\]\\[])";
+            Pattern pattern = Pattern.compile(regs);
+
+            String[] strCmd = new String[]{"getprop"};
+            List<String> execResult = U.executeCommand(strCmd);
+            for (String cmd : execResult) {
+                String[] line = cmd.split(":");
+                Matcher matcher0 = pattern.matcher(line[0]);
+                line[0] = matcher0.replaceAll("").trim();
+                Matcher matcher1 = pattern.matcher(line[1]);
+                line[1] = matcher1.replaceAll("").trim();
+                mProps.put(line[0], line[1]);
+            }
+            L.v(TAG, "mProps: " + mProps);
+            return true;
+        } catch (Exception e) {
+            if (isDebug) {
+                L.e(TAG, "executeGetProp error: ", e);
+            } else {
+                L.w(TAG, "executeGetProp error: " + e);
             }
         }
         return false;
@@ -870,7 +938,6 @@ public final class EmulatorDetector {
                     .append("]")
                     .toString();
         }
-
     }
 }
 

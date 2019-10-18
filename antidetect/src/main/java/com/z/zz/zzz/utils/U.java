@@ -13,6 +13,8 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.List;
 
 public class U {
     private static final String TAG = "U";
@@ -94,5 +96,18 @@ public class U {
         }
 
         return TextUtils.isEmpty(serial) ? Build.UNKNOWN : serial;
+    }
+
+    public static List<String> executeCommand(String[] shellCmd) {
+        long start = System.currentTimeMillis();
+        SystemCommandExecutor executor = new SystemCommandExecutor(shellCmd);
+        try {
+            int result = executor.executeCommand();
+            L.v(TAG, "call executeCommand " + Arrays.asList(shellCmd) + ": " + result
+                    + ", cost: " + (System.currentTimeMillis() - start) + "ms");
+        } catch (Exception e) {
+            L.e(TAG, "call SystemCommandExecutor error: ", e);
+        }
+        return executor.getStandardOutputStream();
     }
 }

@@ -2,8 +2,11 @@ package com.z.zz.zzz;
 
 import android.os.Debug;
 
+import com.z.zz.zzz.utils.L;
+
 import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,11 +50,13 @@ class Debugger {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            L.e(AntiDetector.TAG, "hasTracerPid error: ", e);
         } finally {
-            try {
-                reader.close();
-            } catch (Exception e) {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                }
             }
         }
         return false;
@@ -75,8 +80,6 @@ class Debugger {
                 tcpList.add(tcp.create(line.split("\\W+")));
             }
 
-            reader.close();
-
             // Adb is always bounce to 0.0.0.0 - though the port can change
             // real devices should be != 127.0.0.1
             int adbPort = -1;
@@ -95,11 +98,13 @@ class Debugger {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            L.e(AntiDetector.TAG, "hasAdbInEmulator error: ", e);
         } finally {
-            try {
-                reader.close();
-            } catch (Exception e) {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                }
             }
         }
 
@@ -114,17 +119,17 @@ class Debugger {
         int remoteIp;
         int remotePort;
 
-        static tcp create(String[] params) {
-            return new tcp(params[1], params[2], params[3], params[4], params[5], params[6], params[7], params[8],
-                    params[9], params[10], params[11], params[12], params[13], params[14]);
-        }
-
         tcp(String id, String localIp, String localPort, String remoteIp, String remotePort, String state,
             String tx_queue, String rx_queue, String tr, String tm_when, String retrnsmt, String uid,
             String timeout, String inode) {
             this.id = Integer.parseInt(id, 16);
             this.localIp = Long.parseLong(localIp, 16);
             this.localPort = Integer.parseInt(localPort, 16);
+        }
+
+        static tcp create(String[] params) {
+            return new tcp(params[1], params[2], params[3], params[4], params[5], params[6], params[7], params[8],
+                    params[9], params[10], params[11], params[12], params[13], params[14]);
         }
     }
 }

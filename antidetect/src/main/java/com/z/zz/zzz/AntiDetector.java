@@ -10,23 +10,19 @@ import android.text.TextUtils;
 import com.z.zz.zzz.emu.EmulatorDetector;
 import com.z.zz.zzz.utils.L;
 import com.z.zz.zzz.utils.U;
-import com.z.zz.zzz.xml.WhiteListEntry;
-import com.z.zz.zzz.xml.WhiteListXmlParser;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -55,7 +51,6 @@ public final class AntiDetector {
     public Map<String, String> mData;
     private Context context;
     private boolean isDebug;
-    private WhiteListXmlParser parser;
     private boolean isSticky;
 
     private AntiDetector(Context pContext) {
@@ -99,9 +94,15 @@ public final class AntiDetector {
                 return true;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            if (isDebug) {
+                L.e(TAG, "checkSuFile error: ", e);
+            } else {
+                L.w(TAG, "checkSuFile error: " + e);
+            }
         } finally {
-            if (process != null) process.destroy();
+            if (process != null) {
+                process.destroy();
+            }
         }
         return false;
     }
@@ -124,40 +125,19 @@ public final class AntiDetector {
     private boolean checkBusybox() {
         try {
             String[] strCmd = new String[]{"busybox", "df"};
-            List<String> execResult = executeCommand(strCmd);
+            List<String> execResult = U.executeCommand(strCmd);
             if (execResult != null) {
                 L.v(TAG, "checkBusybox(): execResult=" + execResult);
                 return true;
             }
         } catch (Exception e) {
-            L.e(TAG, "Unexpected error - Here is what I know: ", e);
+            if (isDebug) {
+                L.e(TAG, "checkBusybox error: ", e);
+            } else {
+                L.w(TAG, "checkBusybox error: " + e);
+            }
         }
         return false;
-    }
-
-    private List<String> executeCommand(String[] shellCmd) {
-        String line = null;
-        List<String> fullResponse = new ArrayList<>();
-        Process localProcess = null;
-        try {
-            L.v(TAG, "To shell exec which for find su :");
-            localProcess = Runtime.getRuntime().exec(shellCmd);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-        BufferedWriter out = new BufferedWriter(new OutputStreamWriter(localProcess.getOutputStream()));
-        BufferedReader in = new BufferedReader(new InputStreamReader(localProcess.getInputStream()));
-        try {
-            while ((line = in.readLine()) != null) {
-                L.v(TAG, "–> Line received: " + line);
-                fullResponse.add(line);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        L.v(TAG, "–> Full response was: " + fullResponse);
-        return fullResponse;
     }
 
     private boolean checkAccessRootData() {
@@ -176,45 +156,82 @@ public final class AntiDetector {
                 return true;
             }
         } catch (Exception e) {
-            L.e(TAG, "Unexpected error - Here is what I know: ", e);
+            if (isDebug) {
+                L.e(TAG, "checkAccessRootData error: ", e);
+            } else {
+                L.w(TAG, "checkAccessRootData error: " + e);
+            }
         }
         return false;
     }
 
     private Boolean writeFile(String fileName, String message) {
+        FileOutputStream fos = null;
         try {
-            FileOutputStream fout = new FileOutputStream(fileName);
+            fos = new FileOutputStream(fileName);
             byte[] bytes = message.getBytes();
-            fout.write(bytes);
-            fout.close();
+            fos.write(bytes);
+            fos.flush();
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
+            if (isDebug) {
+                L.e(TAG, "writeFile error: ", e);
+            } else {
+                L.w(TAG, "writeFile error: " + e);
+            }
+        } finally {
+            if (fos != null) {
+                try {
+                    fos.close();
+                } catch (IOException e) {
+                }
+            }
         }
         return false;
     }
 
     private String readFile(String fileName) {
         File file = new File(fileName);
+        FileInputStream fis = null;
+        ByteArrayOutputStream bos = null;
         try {
-            FileInputStream fis = new FileInputStream(file);
+            fis = new FileInputStream(file);
             byte[] bytes = new byte[1024];
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            bos = new ByteArrayOutputStream();
             int len;
             while ((len = fis.read(bytes)) > 0) {
                 bos.write(bytes, 0, len);
             }
+            bos.flush();
             String result = new String(bos.toByteArray());
             L.v(TAG, "readFile(): " + result);
             return result;
         } catch (Exception e) {
-            e.printStackTrace();
+            if (isDebug) {
+                L.e(TAG, "readFile error: ", e);
+            } else {
+                L.w(TAG, "readFile error: " + e);
+            }
+        } finally {
+            if (fis != null) {
+                try {
+                    fis.close();
+                } catch (IOException e) {
+                }
+            }
+
+            if (bos != null) {
+                try {
+                    bos.close();
+                } catch (IOException e) {
+                }
+            }
         }
         return null;
     }
 
     private String getUniquePsuedoID() {
-        String serial = null;
+        String serial;
 
         String m_szDevIDShort = "35" +
                 Build.BOARD.length() % 10 + Build.BRAND.length() % 10 +
@@ -246,19 +263,19 @@ public final class AntiDetector {
             result = true;
         }
 
-        if (!result && checkRootFile()) {
+        if ((!result || isDebug) && checkRootFile()) {
             result = true;
         }
 
-        if (!result && checkBusybox()) {
+        if ((!result || isDebug) && checkBusybox()) {
             result = true;
         }
 
-        if (!result && checkAccessRootData()) {
+        if ((!result || isDebug) && checkAccessRootData()) {
             result = true;
         }
 
-        if (!result) {
+        if (!result || isDebug) {
             Process process = null;
             DataOutputStream os = null;
             try {
@@ -269,19 +286,23 @@ public final class AntiDetector {
                 int exitValue = process.waitFor();
                 if (exitValue == 0) {
                     result = true;
-                } else {
-                    result = false;
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                if (isDebug) {
+                    L.e(TAG, "isRooted error: ", e);
+                } else {
+                    L.w(TAG, "isRooted error: " + e);
+                }
             } finally {
-                try {
-                    if (os != null) {
+                if (os != null) {
+                    try {
                         os.close();
+                    } catch (IOException e) {
                     }
+                }
+
+                if (process != null) {
                     process.destroy();
-                } catch (Exception e) {
-                    e.printStackTrace();
                 }
             }
         }
@@ -296,10 +317,6 @@ public final class AntiDetector {
 
     public AntiDetector setDebug(boolean isDebug) {
         this.isDebug = isDebug;
-        if (isDebug) {
-            parser = new WhiteListXmlParser();
-            parser.parse(context);
-        }
         return this;
     }
 
@@ -343,39 +360,6 @@ public final class AntiDetector {
     private boolean checkAntiDetect() {
         synchronized (AntiDetector.class) {
             FLAG_SAFE = 0x0;
-
-            try {
-                if (parser != null) {
-                    String androidId = new AndroidID(context).getAndroidID();
-                    L.v(TAG, "androidId: " + androidId);
-                    String serial = getUniquePsuedoID();
-                    L.v(TAG, "serial: " + serial);
-
-                    if (!TextUtils.isEmpty(serial)) {
-                        Iterator<WhiteListEntry> it = parser.getPluginEntries().iterator();
-                        while (it.hasNext()) {
-                            String id = it.next().androidId;
-                            if (serial.equals(id)) {
-                                L.i(TAG, "The device [" + id + "] is in the white list.");
-                                return false;
-                            }
-                        }
-                    }
-
-                    if (!TextUtils.isEmpty(androidId)) {
-                        Iterator<WhiteListEntry> it = parser.getPluginEntries().iterator();
-                        while (it.hasNext()) {
-                            String id = it.next().androidId;
-                            if (androidId.equals(id)) {
-                                L.i(TAG, "The device [" + id + "] is in the white list.");
-                                return false;
-                            }
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                // ignored
-            }
 
             if (isSticky) {
                 boolean inDevelopmentMode = inDevelopmentMode();
@@ -501,7 +485,11 @@ public final class AntiDetector {
                 proxyPort = android.net.Proxy.getPort(context);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            if (isDebug) {
+                L.e(TAG, "isWifiProxy error: ", e);
+            } else {
+                L.w(TAG, "isWifiProxy error: " + e);
+            }
         }
 
         boolean result = !TextUtils.isEmpty(proxyAddress) && (proxyPort != -1);
@@ -515,7 +503,7 @@ public final class AntiDetector {
      * 是否正在使用VPN
      */
     private boolean isVPNConnected() {
-        boolean result = false;
+        boolean result;
 
         List<String> networkList = new ArrayList<>();
         try {
@@ -525,7 +513,11 @@ public final class AntiDetector {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            if (isDebug) {
+                L.e(TAG, "isVPNConnected error: ", e);
+            } else {
+                L.w(TAG, "isVPNConnected error: " + e);
+            }
         }
 
         result = networkList.contains("tun0") || networkList.contains("ppp0");
