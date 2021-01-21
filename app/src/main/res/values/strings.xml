@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">AntiDetector</string>
+
+    <string name="go_make_money">去领钱</string>
 </resources>

@@ -60,7 +60,6 @@ public final class EmulatorDetector {
     private static JSONObject jEmu = new JSONObject();
     private boolean isDebug;
     private List<String> mListPackageName;
-    private Map<String, String> mProps = new HashMap<>();
 
     private EmulatorDetector(Context context) {
         sContext = context;
@@ -544,36 +543,11 @@ public final class EmulatorDetector {
     }
 
     private boolean doCheckEmu(Context context) {
-        int flags = 0;
         boolean result = false;
 
-        if (checkBuildProperty()) {
-            flags++;
-        }
-        if (checkResolveDialAction(context)) {
-            flags++;
-        }
-        if (checkBluetoothHardware()) {
-            flags++;
-        }
-        if (checkGPSHardware(context)) {
-            flags++;
-        }
-        if (checkMultiTouch(context)) {
-            flags++;
-        }
-
-        log("CheckEmu flags: " + flags + " (thresholds: " + MIN_EMU_FLAGS_THRESHOLD + ")");
-        if (flags > 0) {
-            U.putJsonSafed(jEmu, "fl", flags);
-        }
-
-        if (flags >= MIN_EMU_FLAGS_THRESHOLD) {
-            if (isDebug) {
-                result = true;
-            } else {
-                return true;
-            }
+        if (isDebug) {
+            JSONObject jo = executeGetProp();
+            L.v(TAG, "call executeGetProp(): " + jo);
         }
 
         if (checkEmuFeature()) {
@@ -605,6 +579,38 @@ public final class EmulatorDetector {
                 return true;
             }
         }
+
+        int flags = 0;
+
+        if (checkBuildProperty()) {
+            flags++;
+        }
+        if (checkResolveDialAction(context)) {
+            flags++;
+        }
+        if (checkBluetoothHardware()) {
+            flags++;
+        }
+        if (checkGPSHardware(context)) {
+            flags++;
+        }
+        if (checkMultiTouch(context)) {
+            flags++;
+        }
+
+        log("CheckEmu flags: " + flags + " (thresholds: " + MIN_EMU_FLAGS_THRESHOLD + ")");
+        if (flags > 0) {
+            U.putJsonSafed(jEmu, "fl", flags);
+        }
+
+        if (flags >= MIN_EMU_FLAGS_THRESHOLD) {
+            if (isDebug) {
+                result = true;
+            } else {
+                return true;
+            }
+        }
+
         if (isDebug) {
             return result;
         } else {
@@ -621,7 +627,6 @@ public final class EmulatorDetector {
             boolean isPipe = checkFiles(PIPES);
             boolean isX86File = checkQEmuProps() && checkFiles(X86_FILES);
             boolean isQEmuDrivers = checkQEmuDrivers();
-            executeGetProp();
             return isTelePhony || isIp || isPackageName || isEmuFile || isPipe || isX86File || isQEmuDrivers;
         } else {
             return checkTelephony()
@@ -858,23 +863,32 @@ public final class EmulatorDetector {
         return false;
     }
 
-    private boolean executeGetProp() {
+    private JSONObject executeGetProp() {
+        JSONObject jProps = new JSONObject();
         try {
             String regs = "([\\]\\[])";
             Pattern pattern = Pattern.compile(regs);
 
             String[] strCmd = new String[]{"getprop"};
             List<String> execResult = U.executeCommand(strCmd);
+
+            JSONArray ja = new JSONArray();
+            U.putJsonSafed(jProps, "props", ja);
+
+            int i = 0;
             for (String cmd : execResult) {
                 String[] line = cmd.split(":");
                 Matcher matcher0 = pattern.matcher(line[0]);
                 line[0] = matcher0.replaceAll("").trim();
                 Matcher matcher1 = pattern.matcher(line[1]);
                 line[1] = matcher1.replaceAll("").trim();
-                mProps.put(line[0], line[1]);
+
+                JSONObject jo = new JSONObject();
+                U.putJsonSafed(jo, "name", line[0]);
+                U.putJsonSafed(jo, "value", line[1]);
+                U.putJsonSafed(ja, i++, jo);
             }
-            L.v(TAG, "mProps: " + mProps);
-            return true;
+            return jProps;
         } catch (Exception e) {
             if (isDebug) {
                 L.e(TAG, "executeGetProp error: ", e);
@@ -882,7 +896,7 @@ public final class EmulatorDetector {
                 L.w(TAG, "executeGetProp error: " + e);
             }
         }
-        return false;
+        return jProps;
     }
 
     private boolean isSupportTelePhony() {

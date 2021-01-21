@@ -73,6 +73,15 @@ public class U {
         return null;
     }
 
+    public static JSONArray putJsonSafed(JSONArray json, int index, Object value) {
+        try {
+            return json.put(index, value);
+        } catch (JSONException e) {
+        }
+
+        return json;
+    }
+
     public static <O> O getJsonSafed(JSONArray json, int index) {
         try {
             return (O) json.get(index);
