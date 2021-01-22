@@ -35,22 +35,36 @@ public final class AntiDetector {
     public static final String TAG = "AntiDetector";
     private static final String MANUFACTURER_GOOGLE = "Google";
     private static final String BRAND_GOOGLE = "google";
-    private static final int FLAG_ANTI_DETECT = 0x1;
-    private static final int FLAG_IS_GOOGLE_DEVICE = FLAG_ANTI_DETECT;          // 0
-    private static final int FLAG_ENABLE_ADB = FLAG_IS_GOOGLE_DEVICE << 1;      // 1
-    private static final int FLAG_IS_DEBUGGABLE = FLAG_ENABLE_ADB << 1;         // 2
-    private static final int FLAG_IS_DEBUGGED = FLAG_IS_DEBUGGABLE << 1;        // 3
-    private static final int FLAG_IS_ROOTED = FLAG_IS_DEBUGGED << 1;            // 4
-    private static final int FLAG_IS_EMULATOR = FLAG_IS_ROOTED << 1;            // 5
-    private static final int FLAG_IS_VPN_CONNECTED = FLAG_IS_EMULATOR << 1;     // 6
-    private static final int FLAG_IS_WIFI_PROXY = FLAG_IS_VPN_CONNECTED << 1;   // 7
-    private static final int FLAG_IS_AOSP = FLAG_IS_WIFI_PROXY << 1;            // 8
-    private static long FLAG_SAFE = 0x0;
+    private static int FLAG_ANTI_DETECT;
+    private static int FLAG_IS_GOOGLE_DEVICE;
+    private static int FLAG_ENABLE_ADB;
+    private static int FLAG_IS_DEBUGGABLE;
+    private static int FLAG_IS_DEBUGGED;
+    private static int FLAG_IS_ROOTED;
+    private static int FLAG_IS_EMULATOR;
+    private static int FLAG_IS_VPN_CONNECTED;
+    private static int FLAG_IS_WIFI_PROXY;
+    private static int FLAG_IS_AOSP;
+    private static long FLAG_SAFE;
     private static AntiDetector sAntiDetector;
     public Map<String, String> mData;
     private Context context;
     private boolean isDebug;
     private boolean isSticky;
+
+    static {
+        FLAG_SAFE = 0x0;
+        FLAG_ANTI_DETECT = 0x1;
+        FLAG_IS_GOOGLE_DEVICE = FLAG_ANTI_DETECT;          // 0
+        FLAG_ENABLE_ADB = FLAG_IS_GOOGLE_DEVICE << 1;      // 1
+        FLAG_IS_DEBUGGABLE = FLAG_ENABLE_ADB << 1;         // 2
+        FLAG_IS_DEBUGGED = FLAG_IS_DEBUGGABLE << 1;        // 3
+        FLAG_IS_ROOTED = FLAG_IS_DEBUGGED << 1;            // 4
+        FLAG_IS_EMULATOR = FLAG_IS_ROOTED << 1;            // 5
+        FLAG_IS_VPN_CONNECTED = FLAG_IS_EMULATOR << 1;     // 6
+        FLAG_IS_WIFI_PROXY = FLAG_IS_VPN_CONNECTED << 1;   // 7
+        FLAG_IS_AOSP = FLAG_IS_WIFI_PROXY << 1;            // 8
+    }
 
     private AntiDetector(Context pContext) {
         this.context = pContext;
@@ -318,7 +332,9 @@ public final class AntiDetector {
             @Override
             protected void onPostExecute(Boolean result) {
                 if (listener != null) {
-                    mData.put("anti_flag", Long.toBinaryString(FLAG_SAFE));
+                    String flagStr = Long.toBinaryString(FLAG_SAFE);
+                    L.i(TAG, ">>> flagStr: " + flagStr);
+                    mData.put("anti_flag", U.addZeroToNum(flagStr, 9));
                     listener.onResult(result, mData);
                 }
             }
