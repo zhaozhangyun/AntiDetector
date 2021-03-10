@@ -55,7 +55,7 @@ public final class AntiDetector {
     static {
         FLAG_SAFE = 0x0;
         FLAG_ANTI_DETECT = 0x1;
-        FLAG_IS_GOOGLE_DEVICE = FLAG_ANTI_DETECT;          // 0
+        FLAG_IS_GOOGLE_DEVICE = FLAG_ANTI_DETECT;          // 0 - 表示低位（右侧）
         FLAG_ENABLE_ADB = FLAG_IS_GOOGLE_DEVICE << 1;      // 1
         FLAG_IS_DEBUGGABLE = FLAG_ENABLE_ADB << 1;         // 2
         FLAG_IS_DEBUGGED = FLAG_IS_DEBUGGABLE << 1;        // 3
@@ -63,7 +63,7 @@ public final class AntiDetector {
         FLAG_IS_EMULATOR = FLAG_IS_ROOTED << 1;            // 5
         FLAG_IS_VPN_CONNECTED = FLAG_IS_EMULATOR << 1;     // 6
         FLAG_IS_WIFI_PROXY = FLAG_IS_VPN_CONNECTED << 1;   // 7
-        FLAG_IS_AOSP = FLAG_IS_WIFI_PROXY << 1;            // 8
+        FLAG_IS_AOSP = FLAG_IS_WIFI_PROXY << 1;            // 8 - 表示高位（左侧）
     }
 
     private AntiDetector(Context pContext) {
@@ -467,7 +467,9 @@ public final class AntiDetector {
         try {
             if (is_ics_or_later) {
                 proxyAddress = System.getProperty("http.proxyHost");
+                L.d(TAG, "proxyAddress: " + proxyAddress);
                 String portstr = System.getProperty("http.proxyPort");
+                L.d(TAG, "proxyPort: " + portstr);
                 proxyPort = Integer.parseInt((portstr != null ? portstr : "-1"));
             } else {
                 proxyAddress = android.net.Proxy.getHost(context);
