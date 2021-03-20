@@ -91,6 +91,60 @@ public class U {
         return null;
     }
 
+    public static String formatJson(Object source) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("\n");
+        builder.append(getSplitter(100));
+        builder.append("\n");
+        builder.append(formatJsonBody(source));
+        builder.append("\n");
+        builder.append(getSplitter(100));
+        return builder.toString();
+    }
+
+    private static String getSplitter(int length) {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < length; i++) {
+            builder.append("-");
+        }
+        return builder.toString();
+    }
+
+    private static String formatJsonBody(Object source) {
+        Object o = getJsonObjFromStr(source);
+        if (o != null) {
+            try {
+                if (o instanceof JSONObject) {
+                    return ((JSONObject) o).toString(2);
+                } else if (o instanceof JSONArray) {
+                    return ((JSONArray) o).toString(2);
+                } else {
+                    return source.toString();
+                }
+            } catch (JSONException e) {
+                return source.toString();
+            }
+        } else {
+            return source.toString();
+        }
+    }
+
+    private static Object getJsonObjFromStr(Object test) {
+        Object o = null;
+        try {
+            o = new JSONObject(test.toString());
+        } catch (JSONException ex) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    o = new JSONArray(test);
+                }
+            } catch (JSONException ex1) {
+                return null;
+            }
+        }
+        return o;
+    }
+
     public static String getBuildSerial(Context context) {
         String serial = Build.UNKNOWN;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {//9.0+
