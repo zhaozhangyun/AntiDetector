@@ -24,6 +24,9 @@ allprojects {
         maven {
             url 'https://dl.bintray.com/zizzy0301/zizzy-nbb'
         }
+        flatDir {
+            dirs 'libs'
+        }
     }
 }
 

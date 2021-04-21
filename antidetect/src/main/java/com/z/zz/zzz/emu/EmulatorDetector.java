@@ -316,6 +316,9 @@ public final class EmulatorDetector {
 
     // CPU信息
     private boolean checkCpuInfo() {
+        String osArch = System.getProperty("os.arch");
+        log("osArch: " + osArch);
+
         String cpu = getCPUInfo();
         if (!TextUtils.isEmpty(cpu)) {
             if (cpu.toLowerCase().contains("intel") || cpu.toLowerCase().contains("amd")) {

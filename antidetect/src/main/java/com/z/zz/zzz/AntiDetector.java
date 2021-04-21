@@ -7,6 +7,7 @@ import android.os.Build;
 import android.provider.Settings;
 import android.text.TextUtils;
 
+import com.z.zz.zzz.emu.EmuChecker;
 import com.z.zz.zzz.emu.EmulatorDetector;
 import com.z.zz.zzz.utils.L;
 import com.z.zz.zzz.utils.U;
@@ -333,7 +334,6 @@ public final class AntiDetector {
             protected void onPostExecute(Boolean result) {
                 if (listener != null) {
                     String flagStr = Long.toBinaryString(FLAG_SAFE);
-                    L.i(TAG, ">>> flagStr: " + flagStr);
                     mData.put("anti_flag", U.addZeroToNum(flagStr, 9));
                     listener.onResult(result, mData);
                 }
@@ -452,6 +452,9 @@ public final class AntiDetector {
         L.v(TAG, ">>> Emulator dump: " + EmulatorDetector.dump());
         if (isEmulator) {
             FLAG_SAFE |= FLAG_IS_EMULATOR;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            EmuChecker.executeChecks(context);
         }
         return isEmulator;
     }
