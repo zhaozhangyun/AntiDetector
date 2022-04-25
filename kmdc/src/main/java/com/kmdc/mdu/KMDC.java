@@ -235,9 +235,9 @@ public class KMDC {
                         mdJson.put("scldns", "");
                     }
 
-//            mdJson.put("vidmfc",vidmfc);
-//            mdJson.put("vidnm",vidnm);
-//            mdJson.put("lmac", "");
+//                    mdJson.put("vidmfc", vidmfc);
+//                    mdJson.put("vidnm", vidnm);
+//                    mdJson.put("lmac", "");
 
                     //net； 网络类型
                     mdJson.put("net", getNetworkState(activity));
@@ -619,8 +619,9 @@ public class KMDC {
     }
 
     private String getCameraPixels(int paramInt) {
-        if (paramInt == 2)
+        if (paramInt == 2) {
             return "无";
+        }
 
         Camera localCamera = Camera.open(paramInt);
         Camera.Parameters localParameters = localCamera.getParameters();
@@ -630,7 +631,7 @@ public class KMDC {
             int heights[] = new int[localList.size()];
             int widths[] = new int[localList.size()];
             for (int i = 0; i < localList.size(); i++) {
-                Camera.Size size = (Camera.Size) localList.get(i);
+                Camera.Size size = localList.get(i);
                 int sizehieght = size.height;
                 int sizewidth = size.width;
                 L.d("size " + sizewidth + "x" + sizehieght);
@@ -640,9 +641,9 @@ public class KMDC {
             int pixels = getMaxNumber(heights) * getMaxNumber(widths);
             localCamera.release();
             return (pixels / 10000) + " 万";
-
-        } else return "无";
-
+        } else {
+            return "无";
+        }
     }
 
     private int getMaxNumber(int[] paramArray) {
@@ -679,10 +680,8 @@ public class KMDC {
                         jsonObject.put("crc", Crc32Utils.crc(activity, packageInfo.packageName));
                         jsonArray.put(jsonObject);
                     } catch (JSONException e) {
-//                    e.printStackTrace();
                     }
                 }
-
             }
         } catch (Exception e) {
         }
