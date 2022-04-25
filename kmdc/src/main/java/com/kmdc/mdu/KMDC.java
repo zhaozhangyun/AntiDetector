@@ -37,7 +37,6 @@ import android.telephony.TelephonyManager;
 import android.telephony.cdma.CdmaCellLocation;
 import android.telephony.gsm.GsmCellLocation;
 import android.text.TextUtils;
-import android.util.Base64;
 import android.util.DisplayMetrics;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -46,7 +45,9 @@ import com.kmdc.mdu.gui.GpuInfoUtil;
 import com.kmdc.mdu.http.UtilNetworking;
 import com.kmdc.mdu.oaid.CoreOaid;
 import com.kmdc.mdu.oaid.OAIDHelper;
-import com.kmdc.mdu.utils.Crc32Util;
+import com.kmdc.mdu.utils.AESUtils;
+import com.kmdc.mdu.utils.Crc32Utils;
+import com.kmdc.mdu.utils.RSAUtils;
 import com.kmdc.mdu.utils.Utils;
 import com.satori.sdk.io.event.openudid.OpenUDIDClient;
 
@@ -59,9 +60,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 
 import javax.microedition.khronos.opengles.GL10;
@@ -75,7 +76,6 @@ import zizzy.zhao.bridgex.l.L;
 
 public class KMDC {
 
-    private static final String TAG = "KMDC";
     private static Object[] lock = new Object[0];
     private static CountDownLatch latch = new CountDownLatch(1);
 
@@ -104,7 +104,8 @@ public class KMDC {
 
         get().coltMobData(activity, openudid, content -> {
 //            L.d(content, null);
-            byte[] base64Char = Base64.encode(content.getBytes(StandardCharsets.UTF_8), 0);
+
+//            byte[] base64Char = Base64.encode(content.getBytes(StandardCharsets.UTF_8), 0);
 //            File localFile = FileUtils.saveFile(activity, base64Char);
 //            L.d(localFile.getAbsolutePath(), null);
 //            if (localFile != null && localFile.exists()) {
@@ -123,9 +124,17 @@ public class KMDC {
 
 //            String base64Str = Base64.encodeToString(content.getBytes(StandardCharsets.UTF_8), 0);
             try {
-                JSONObject jo = UtilNetworking.doPost(base64Char);
-                L.d("jo: " + jo);
+                UUID uuid = UUID.randomUUID();
+                String uuidStr = uuid.toString().replaceAll("-", "");
+                uuidStr = uuidStr.substring(0, 16);
+
+                String cipherText = AESUtils.encrypt(content, uuidStr, uuidStr);
+
+                String signStr = RSAUtils.encryptByPublicKey(uuidStr, RSAUtils.PUBLIC_KEY_TEST);
+
+                JSONObject jo = UtilNetworking.doPost(cipherText, openudid, signStr);
                 int status = jo.getInt("status");
+                L.d("jo: " + jo);
                 switch (status) {
                     case 0:
                         break;
@@ -138,7 +147,7 @@ public class KMDC {
                         throw new IllegalStateException("Invalid status: " + status);
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                L.e(e);
             }
         });
     }
@@ -667,7 +676,7 @@ public class KMDC {
                         jsonObject.put("pkg", packageInfo.packageName);
                         jsonObject.put("vernm", packageInfo.versionName);
                         jsonObject.put("vercd", packageInfo.versionCode);
-                        jsonObject.put("crc", Crc32Util.crc(activity, packageInfo.packageName));
+                        jsonObject.put("crc", Crc32Utils.crc(activity, packageInfo.packageName));
                         jsonArray.put(jsonObject);
                     } catch (JSONException e) {
 //                    e.printStackTrace();

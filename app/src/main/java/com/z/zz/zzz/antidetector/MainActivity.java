@@ -24,10 +24,36 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+//        zizzy.zhao.bridgex.l.L.attach(this);
+
 //        CoreOaid.readOaid(this);
 //        OAIDHelper.fetchOAID(this, params -> {
-//            Log.i("main", "params: " + params);
+//            L.i("main", "params: " + params);
 //        });
+
+//        try {
+//            Map<String, Object> keyMap = RSAUtils.initKey();
+//            String publicKey = RSAUtils.getPublicKey(keyMap);
+//            L.d("main", "publicKey: " + publicKey);
+//            String privateKey = RSAUtils.getPrivateKey(keyMap);
+//            L.d("main", "privateKey: " + privateKey);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+
+//        UUID uuid = UUID.randomUUID();
+//        String uuidStr = uuid.toString().replaceAll("-", "");
+//        uuidStr = uuidStr.substring(0, 16);
+//        String signStr = RSAUtils.encryptByPublicKey(uuidStr, RSAUtils.PUBLIC_KEY_TEST);
+//        L.d("main", "signStr: " + signStr);
+//        String rawKey = RSAUtils.decryptByPrivateKey(signStr, RSAUtils.PRIVATE_KEY_TEST);
+//        L.d("main", "uuid: " + uuid + ", uuidStr: " + uuidStr + ", rawKey: " + rawKey);
+//
+//        String rawText = "111111";
+//        String cipherText = AESUtils.encrypt(rawText, uuidStr, uuidStr);
+//        L.d("main", "cipherText: " + cipherText);
+//        String plainText = AESUtils.decrypt(cipherText, uuidStr, uuidStr);
+//        L.d("main", "plainText: " + plainText);
 
         KMDC.doFetch(this);
 

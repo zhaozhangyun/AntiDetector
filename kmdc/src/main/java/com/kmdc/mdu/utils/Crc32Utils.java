@@ -1,5 +1,4 @@
-package com.kmdc.mdu.utils
-        ;
+package com.kmdc.mdu.utils;
 
 import android.content.Context;
 import android.content.pm.PackageInfo;
@@ -16,7 +15,7 @@ import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-public class Crc32Util {
+public class Crc32Utils {
 
     public static String crc(Context context, String packageName) {
         try {

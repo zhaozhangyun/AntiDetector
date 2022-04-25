@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPOutputStream;
 
 import zizzy.zhao.bridgex.l.L;
@@ -61,11 +62,11 @@ public class UtilNetworking {
         return new JSONObject(stringResponse);
     }
 
-    public static JSONObject doPost(String content) throws Exception {
-        return doPost(content.getBytes("UTF-8"));
+    public static JSONObject doPost(String content, String openudid, String sign) throws Exception {
+        return doPost(content.getBytes(StandardCharsets.UTF_8), openudid, sign);
     }
 
-    public static JSONObject doPost(byte[] data) throws Exception {
+    public static JSONObject doPost(byte[] data, String openudid, String sign) throws Exception {
         String adurl = "https://zlod.keve19.com/upload/accdd.jsp";
 //        String json = "eyJjbmwiOiIxMDAwXzEyMDFfMjM5MDAxMDAiLCJ2diI6MTAwMDAsIm50IjoxLCJpcCI6IjEuODQuMjUzLjIzNiIsIm9waWQiOiI0NjAwMyIsInVzZXJhZ2VudCI6InVzZXJhZ2VudCIsImRldmljZXR5cGUiOjEsInNpZCI6MSwib3N2IjoiMTAiLCJoZHR5cGUiOjEsImltZWkiOiI4NTM1MTIwMjIxMDEwMDEiLCJhaWQiOjEsImZsb3dpZCI6IjEiLCJvc2FwaWxldmVsIjoiMjgiLCJvYWlkIjoiIn0";
 //        String json = "11111111111111111";
@@ -84,6 +85,8 @@ public class UtilNetworking {
         conn.setRequestProperty("charset", "ISO-8859-1");
         conn.setRequestProperty("Accept-Encoding", "gzip");
         conn.setRequestProperty("Content-Encoding", "gzip");
+        conn.setRequestProperty("openudid", openudid);
+        conn.setRequestProperty("token", sign);
 
         L.logF("====> [%s] url: %s --- (content)", conn.getRequestMethod(), url);
         L.d("The request properties is: "
