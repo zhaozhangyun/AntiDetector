@@ -8,7 +8,6 @@ import android.content.pm.ResolveInfo;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
-import android.support.v4.content.ContextCompat;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 
@@ -36,6 +35,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.z.zz.zzz.AntiDetector.TAG;
+
+import androidx.core.content.ContextCompat;
 
 public final class EmulatorDetector {
 

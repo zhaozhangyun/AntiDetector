@@ -22,3 +22,21 @@
 
 -dontwarn com.z.zz.zzz.**
 -keep class com.z.zz.zzz.** { *; }
+
+#### KMDC start ####
+-keep class com.kmdc.mdu.KMDC {
+    public *;
+}
+
+-keep class me.weishu.** {
+    public *;
+}
+
+-keep class zizzy.zhao.bridgex.** {
+    public *;
+}
+
+-keep class com.satori.sdk.io.event.** {
+    public *;
+}
+#### KMDC end ####

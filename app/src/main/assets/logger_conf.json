@@ -1,0 +1,6 @@
+{
+  "enabled": true,
+  "default_tag": "kmdc",
+  "log_level": 2,
+  "show_short_class": true
+}
