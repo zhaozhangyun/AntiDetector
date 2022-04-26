@@ -63,7 +63,7 @@ public class AESUtils {
             // 将加密以后的数据进行 Base64 编码
             byte[] plainText = base64Encode(encryptByte);
             String retval = new String(plainText, StandardCharsets.UTF_8);
-            L.logF("rawData: %s, retval: %s", rawData, retval);
+//            L.logF("rawData: %s, retval: %s", rawData, retval);
             return retval;
         } catch (Exception e) {
             L.e(e);
@@ -106,7 +106,7 @@ public class AESUtils {
             // 执行解密操作
             byte[] result = cipher.doFinal(rawData);
             String retval = new String(result, StandardCharsets.UTF_8);
-            L.logF("base64Data: %s, retval: %s", base64Data, retval);
+//            L.logF("base64Data: %s, retval: %s", base64Data, retval);
             return retval;
         } catch (Exception e) {
             L.e(e);

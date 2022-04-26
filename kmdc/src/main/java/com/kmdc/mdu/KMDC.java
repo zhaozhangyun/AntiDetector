@@ -97,10 +97,10 @@ public class KMDC {
         String spOpenudid = sp.getString("openudid", null);
         String openudid = OpenUDIDClient.getOpenUDID(activity);
 
-        if (TextUtils.equals(spOpenudid, openudid)) {
-            L.w("No need to fetch data.");
-            return;
-        }
+//        if (TextUtils.equals(spOpenudid, openudid)) {
+//            L.w("No need to fetch data.");
+//            return;
+//        }
 
         get().coltMobData(activity, openudid, content -> {
 //            L.d(content, null);
@@ -331,7 +331,6 @@ public class KMDC {
                                 latitude = location.getLongitude();
                                 longitude = location.getLatitude();
                             }
-
                         }
                     } catch (Exception e) {
                     }
