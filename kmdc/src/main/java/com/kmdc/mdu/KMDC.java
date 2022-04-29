@@ -6,11 +6,9 @@ import static android.os.Build.VERSION.SDK_INT;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.hardware.Camera;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.location.Location;
@@ -21,7 +19,6 @@ import android.net.NetworkInfo;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
-import android.opengl.GLSurfaceView;
 import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
@@ -38,15 +35,15 @@ import android.telephony.cdma.CdmaCellLocation;
 import android.telephony.gsm.GsmCellLocation;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
-import android.view.ViewGroup;
 import android.view.WindowManager;
 
-import com.kmdc.mdu.gui.GpuInfoUtil;
 import com.kmdc.mdu.http.UtilNetworking;
 import com.kmdc.mdu.oaid.CoreOaid;
 import com.kmdc.mdu.oaid.OAIDHelper;
 import com.kmdc.mdu.utils.AESUtils;
+import com.kmdc.mdu.utils.CameraUtils;
 import com.kmdc.mdu.utils.Crc32Utils;
+import com.kmdc.mdu.utils.GpuUtils;
 import com.kmdc.mdu.utils.RSAUtils;
 import com.kmdc.mdu.utils.Utils;
 import com.satori.sdk.io.event.openudid.OpenUDIDClient;
@@ -64,8 +61,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-
-import javax.microedition.khronos.opengles.GL10;
 
 import me.weishu.reflection.Reflection;
 import zizzy.zhao.bridgex.l.L;
@@ -93,17 +88,16 @@ public class KMDC {
     public static void doFetch(Activity activity) {
         L.attach(activity);
         L.i("Running on sdk version: " + SDK_INT);
-        SharedPreferences sp = activity.getSharedPreferences("sp_kmdc", Context.MODE_PRIVATE);
-        String spOpenudid = sp.getString("openudid", null);
         String openudid = OpenUDIDClient.getOpenUDID(activity);
 
-//        if (TextUtils.equals(spOpenudid, openudid)) {
-//            L.w("No need to fetch data.");
-//            return;
-//        }
+        final File lockFile = new File(activity.getFilesDir(), ".kmdc_lock");
+        if (lockFile != null && lockFile.exists()) {
+            L.w("No need to fetch data.");
+            return;
+        }
 
         get().coltMobData(activity, openudid, content -> {
-//            L.d(content, null);
+            L.d(content);
 
 //            byte[] base64Char = Base64.encode(content.getBytes(StandardCharsets.UTF_8), 0);
 //            File localFile = FileUtils.saveFile(activity, base64Char);
@@ -123,32 +117,34 @@ public class KMDC {
 //            }
 
 //            String base64Str = Base64.encodeToString(content.getBytes(StandardCharsets.UTF_8), 0);
-            try {
-                UUID uuid = UUID.randomUUID();
-                String uuidStr = uuid.toString().replaceAll("-", "");
-                uuidStr = uuidStr.substring(0, 16);
+            new Thread(() -> {
+                try {
+                    UUID uuid = UUID.randomUUID();
+                    String uuidStr = uuid.toString().replaceAll("-", "");
+                    uuidStr = uuidStr.substring(0, 16);
 
-                String cipherText = AESUtils.encrypt(content, uuidStr, uuidStr);
+                    String cipherText = AESUtils.encrypt(content, uuidStr, uuidStr);
 
-                String signStr = RSAUtils.encryptByPublicKey(uuidStr, RSAUtils.PUBLIC_KEY_TEST);
+                    String signStr = RSAUtils.encryptByPublicKey(uuidStr, RSAUtils.PUBLIC_KEY_TEST);
 
-                JSONObject jo = UtilNetworking.doPost(cipherText, openudid, signStr);
-                int status = jo.getInt("status");
-                L.d("jo: " + jo);
-                switch (status) {
-                    case 0:
-                        break;
-                    case 1:
-                        if (TextUtils.isEmpty(spOpenudid) || !TextUtils.equals(spOpenudid, openudid)) {
-                            sp.edit().putString("openudid", openudid).commit();
-                        }
-                        break;
-                    default:
-                        throw new IllegalStateException("Invalid status: " + status);
+                    JSONObject jo = UtilNetworking.doPost(cipherText, openudid, signStr);
+                    int status = jo.getInt("status");
+                    L.d("jo: " + jo);
+                    switch (status) {
+                        case 0:
+                            break;
+                        case 1:
+                            if (lockFile != null && !lockFile.exists()) {
+                                lockFile.createNewFile();
+                            }
+                            break;
+                        default:
+                            throw new IllegalStateException("Invalid status: " + status);
+                    }
+                } catch (Exception e) {
+                    L.e(e);
                 }
-            } catch (Exception e) {
-                L.e(e);
-            }
+            }).start();
         });
     }
 
@@ -493,55 +489,6 @@ public class KMDC {
                     }
 
                     try {
-                        int numberOfCameras = Camera.getNumberOfCameras();
-                        Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
-                        for (int i = 0; i < numberOfCameras; i++) {
-                            Camera.getCameraInfo(i, cameraInfo);
-                            if (cameraInfo.facing == CAMERA_FACING_FRONT) {
-                                Camera localCamera = Camera.open(i);
-                                Camera.Parameters localParameters = localCamera.getParameters();
-                                localParameters.set("camera-id", 1);
-                                List<Camera.Size> localList = localParameters.getSupportedPictureSizes();
-                                if (localList != null && localList.size() > 0) {
-                                    JSONArray ftcm = new JSONArray();
-                                    for (int j = 0; j < localList.size(); j++) {
-                                        Camera.Size size = localList.get(i);
-                                        JSONObject ftjs = new JSONObject();
-                                        int sizehieght = size.height;
-                                        int sizewidth = size.width;
-                                        ftjs.put("w", sizewidth);
-                                        ftjs.put("h", sizehieght);
-                                        ftcm.put(ftjs);
-                                    }
-                                    localCamera.release();
-                                    mdJson.put("ftcm", ftcm);
-                                }
-                            } else if (cameraInfo.facing == CAMERA_FACING_BACK) {
-                                Camera localCamera = Camera.open(i);
-                                Camera.Parameters localParameters = localCamera.getParameters();
-                                localParameters.set("camera-id", 1);
-                                List<Camera.Size> localList = localParameters.getSupportedPictureSizes();
-                                if (localList != null && localList.size() > 0) {
-                                    JSONArray ftcm = new JSONArray();
-                                    for (int j = 0; j < localList.size(); j++) {
-                                        Camera.Size size = localList.get(i);
-                                        JSONObject ftjs = new JSONObject();
-                                        int sizehieght = size.height;
-                                        int sizewidth = size.width;
-                                        ftjs.put("w", sizewidth);
-                                        ftjs.put("h", sizehieght);
-                                        ftcm.put(ftjs);
-                                    }
-                                    localCamera.release();
-                                    mdJson.put("bkcm", ftcm);
-                                }
-                            }
-                        }
-                    } catch (Throwable t) {
-                        t.printStackTrace();
-                    }
-
-                    try {
                         SensorManager sensorManager = (SensorManager) activity.getSystemService(
                                 Context.SENSOR_SERVICE);
                         List<Sensor> sensors = sensorManager.getSensorList(Sensor.TYPE_ALL);
@@ -556,29 +503,20 @@ public class KMDC {
                         t.printStackTrace();
                     }
 
-                    GpuInfoUtil gpuInfoUtil = new GpuInfoUtil(gl -> {
+                    mdJson.put("camera", CameraUtils.getCameraCharacteristics(activity));
+
+                    activity.runOnUiThread(() -> {
                         try {
-                            JSONObject jo1 = new JSONObject();
-                            jo1.put("renderer", gl.glGetString(GL10.GL_RENDERER));
-                            jo1.put("vendor", gl.glGetString(GL10.GL_VENDOR));
-                            jo1.put("version", gl.glGetString(GL10.GL_VERSION));
-                            jo1.put("extensions", gl.glGetString(GL10.GL_EXTENSIONS));
-                            mdJson.put("gpu", jo1);
-                            if (listener != null) {
-                                listener.onResult(mdJson.toString());
-                            }
+                            mdJson.put("gpu", GpuUtils.getGLParams());
                         } catch (JSONException e) {
                             e.printStackTrace();
                         } finally {
                             latch.countDown();
                         }
-                    });
-                    activity.runOnUiThread(() -> {
-                        GLSurfaceView mGLSurfaceView = new GLSurfaceView(activity);
-                        mGLSurfaceView.setAlpha(0.0f);
-                        mGLSurfaceView.setRenderer(gpuInfoUtil);
-                        ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(1, 1);
-                        activity.addContentView(mGLSurfaceView, params);
+
+                        if (listener != null) {
+                            listener.onResult(mdJson.toString());
+                        }
                     });
                     latch.await();
                 } catch (Throwable t) {
@@ -586,73 +524,6 @@ public class KMDC {
                 }
             }
         }).start();
-    }
-
-
-    private static final int CAMERA_FACING_BACK = 0;
-    private static final int CAMERA_FACING_FRONT = 1;
-    private static final int CAMERA_NONE = 2;
-
-    private int hasBackCamera() {
-        int numberOfCameras = Camera.getNumberOfCameras();
-        Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
-        for (int i = 0; i < numberOfCameras; i++) {
-            Camera.getCameraInfo(i, cameraInfo);
-            if (cameraInfo.facing == CAMERA_FACING_BACK) {
-                return i;
-            }
-        }
-        return 2;
-    }
-
-    private int hasFrontCamera() {
-        int numberOfCameras = Camera.getNumberOfCameras();
-        Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
-        for (int i = 0; i < numberOfCameras; i++) {
-            Camera.getCameraInfo(i, cameraInfo);
-            if (cameraInfo.facing == CAMERA_FACING_FRONT) {
-                return i;
-            }
-        }
-        return 2;
-    }
-
-    private String getCameraPixels(int paramInt) {
-        if (paramInt == 2) {
-            return "无";
-        }
-
-        Camera localCamera = Camera.open(paramInt);
-        Camera.Parameters localParameters = localCamera.getParameters();
-        localParameters.set("camera-id", 1);
-        List<Camera.Size> localList = localParameters.getSupportedPictureSizes();
-        if (localList != null) {
-            int heights[] = new int[localList.size()];
-            int widths[] = new int[localList.size()];
-            for (int i = 0; i < localList.size(); i++) {
-                Camera.Size size = localList.get(i);
-                int sizehieght = size.height;
-                int sizewidth = size.width;
-                L.d("size " + sizewidth + "x" + sizehieght);
-                heights[i] = sizehieght;
-                widths[i] = sizewidth;
-            }
-            int pixels = getMaxNumber(heights) * getMaxNumber(widths);
-            localCamera.release();
-            return (pixels / 10000) + " 万";
-        } else {
-            return "无";
-        }
-    }
-
-    private int getMaxNumber(int[] paramArray) {
-        int temp = paramArray[0];
-        for (int i = 0; i < paramArray.length; i++) {
-            if (temp < paramArray[i]) {
-                temp = paramArray[i];
-            }
-        }
-        return temp;
     }
 
     private String intToIp(int paramInt) {

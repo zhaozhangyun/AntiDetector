@@ -37,7 +37,7 @@ dependencies {
     implementation 'me.weishu:free_reflection:3.0.1'
     implementation project(':antidetect')
 //    implementation project(':kmdc')
-    implementation files('libs/kmdc.aar')
+    implementation files('libs/kmdc_v1.0r.aar')
     implementation files('libs/oaid_sdk_1.0.23.aar')
     implementation files('libs/openudid.aar')
     implementation files('libs/bridgex-l.aar')

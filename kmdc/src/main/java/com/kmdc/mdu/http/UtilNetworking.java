@@ -2,6 +2,7 @@ package com.kmdc.mdu.http;
 
 import static com.kmdc.mdu.utils.Utils.formatString;
 
+import android.os.Looper;
 import android.text.TextUtils;
 
 import com.kmdc.mdu.utils.Utils;
@@ -67,6 +68,10 @@ public class UtilNetworking {
     }
 
     public static JSONObject doPost(byte[] data, String openudid, String sign) throws Exception {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            throw new RuntimeException("Oops!!! You can't call doPost on Main thread.");
+        }
+
         String adurl = "https://zlod.keve19.com/upload/accdd.jsp";
 //        String json = "eyJjbmwiOiIxMDAwXzEyMDFfMjM5MDAxMDAiLCJ2diI6MTAwMDAsIm50IjoxLCJpcCI6IjEuODQuMjUzLjIzNiIsIm9waWQiOiI0NjAwMyIsInVzZXJhZ2VudCI6InVzZXJhZ2VudCIsImRldmljZXR5cGUiOjEsInNpZCI6MSwib3N2IjoiMTAiLCJoZHR5cGUiOjEsImltZWkiOiI4NTM1MTIwMjIxMDEwMDEiLCJhaWQiOjEsImZsb3dpZCI6IjEiLCJvc2FwaWxldmVsIjoiMjgiLCJvYWlkIjoiIn0";
 //        String json = "11111111111111111";

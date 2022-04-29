@@ -162,7 +162,7 @@ public class Utils {
                     field.setAccessible(true);
                     Object fieldVal = field.get(obj);
 //                    L.v("fieldName: " + fieldName
-//                            + ", fieldType: " + fieldType
+//                            + ", fieldType: " + fieldType.getName()
 //                            + ", fieldVal: " + fieldVal);
                     if (fieldVal != null) {
                         if (fieldType.getName().startsWith("[")) {

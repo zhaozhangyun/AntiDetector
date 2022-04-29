@@ -3,11 +3,13 @@ plugins {
 }
 
 android {
-    compileSdk 30
+    compileSdkVersion 30
 
     defaultConfig {
-        minSdk 22
-        targetSdk 30
+        minSdkVersion 22
+        targetSdkVersion 30
+        versionCode 1
+        versionName "1.0"
     }
 
     buildTypes {
@@ -27,6 +29,21 @@ android {
         doNotStrip "*/arm64-v8a/*.so"
         doNotStrip "*/x86_64/*.so"
         doNotStrip "*/x86/*.so"
+    }
+
+    android.libraryVariants.all { variant ->
+        variant.outputs.all { output ->
+            def name = project.name
+//            println "======> name: " + name
+            def versionName = defaultConfig.versionName
+//            println "======> versionName: " + versionName
+            if (variant.buildType.name == "release") {
+                outputFileName = "${name}_v${versionName}r.aar"
+            } else if (variant.buildType.name == "debug") {
+                outputFileName = "${name}_v${versionName}d.aar"
+            }
+            println "======> outputFileName: " + outputFileName
+        }
     }
 }
 
