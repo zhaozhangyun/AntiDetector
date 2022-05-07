@@ -169,6 +169,9 @@ public class KMDC {
         WeakReference<Activity> wrCtx = new WeakReference<>(context);
         Activity activity = wrCtx.get();
 
+        /* OAID */
+        CoreOaid.readOaid(activity);
+
         new Thread(() -> {
             synchronized (lock) {
                 L.i("Start to fetch...");
@@ -178,7 +181,6 @@ public class KMDC {
                     mdJson.put("openudid", openudid);
 
                     /* OAID */
-                    CoreOaid.readOaid(activity);
                     OAIDHelper.fetchOAID(activity, (params, sdkVersionCode) -> {
                         try {
                             mdJson.put("oaid_sdk_ver_code", sdkVersionCode);

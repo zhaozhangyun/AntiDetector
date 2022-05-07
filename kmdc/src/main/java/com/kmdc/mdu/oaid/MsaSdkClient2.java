@@ -3,6 +3,7 @@ package com.kmdc.mdu.oaid;
 import android.content.Context;
 
 import com.bun.miitmdid.core.InfoCode;
+import com.kmdc.mdu.BuildConfig;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -20,7 +21,7 @@ class MsaSdkClient2 {
         final BlockingQueue<String> oaidHolder = new LinkedBlockingQueue<>(1);
 
         try {
-            boolean msaInternalLogging = true;
+            boolean msaInternalLogging = BuildConfig.DEBUG;
 //            int result = MdidSdkHelper.InitSdk(context, msaInternalLogging, idSupplier -> {
 //                try {
 //                    if (idSupplier == null || idSupplier.getOAID() == null) {
@@ -129,25 +130,25 @@ class MsaSdkClient2 {
 
     private static boolean isError(int result) {
         switch (result) {
-            case InfoCode.INIT_ERROR_CERT_ERROR:
+            case InfoCode.INIT_ERROR_CERT_ERROR: // 证书未初始化或证书无效，SDK 内部不会回调 onSupport
                 L.e("msa sdk error - INIT_ERROR_CERT_ERROR");
                 return true;
-            case InfoCode.INIT_ERROR_DEVICE_NOSUPPORT:
+            case InfoCode.INIT_ERROR_DEVICE_NOSUPPORT: // 不支持的设备, SDK 内部不会回调 onSupport
                 L.e("msa sdk error - INIT_ERROR_DEVICE_NOSUPPORT");
                 return true;
-            case InfoCode.INIT_ERROR_LOAD_CONFIGFILE:
+            case InfoCode.INIT_ERROR_LOAD_CONFIGFILE: // 加载配置文件出错, SDK 内部不会回调 onSupport
                 L.e("msa sdk error - INIT_ERROR_LOAD_CONFIGFILE");
                 return true;
-            case InfoCode.INIT_ERROR_MANUFACTURER_NOSUPPORT:
+            case InfoCode.INIT_ERROR_MANUFACTURER_NOSUPPORT: // 不支持的设备厂商, SDK 内部不会回调 onSupport
                 L.e("msa sdk error - INIT_ERROR_MANUFACTURER_NOSUPPORT");
                 return true;
-            case InfoCode.INIT_ERROR_SDK_CALL_ERROR:
+            case InfoCode.INIT_ERROR_SDK_CALL_ERROR: // SDK 调用出错, SDK 内部不会回调 onSupport
                 L.e("msa sdk error - INIT_ERROR_SDK_CALL_ERROR");
                 return true;
-            case InfoCode.INIT_INFO_RESULT_DELAY:
-                L.e("msa sdk error - INIT_INFO_RESULT_DELAY");
-                return true;
-            case InfoCode.INIT_INFO_RESULT_OK:
+            case InfoCode.INIT_INFO_RESULT_DELAY: // 获取接口是异步的, SDK 内部会回调 onSupport
+                L.w("msa sdk success - INIT_INFO_RESULT_DELAY");
+                return false;
+            case InfoCode.INIT_INFO_RESULT_OK: // 获取接口是同步的, SDK 内部会回调 onSupport
                 L.i("msa sdk success - INIT_INFO_RESULT_OK");
                 return false;
             default:
