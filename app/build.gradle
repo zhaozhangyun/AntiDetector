@@ -34,7 +34,7 @@ dependencies {
     implementation 'com.android.support:appcompat-v7:30.0.0'
     implementation 'com.android.support.constraint:constraint-layout:1.1.3'
 //    api 'com.zizzy-nbb.lib:antidetect:1.0.10'
-//    implementation 'me.weishu:free_reflection:3.0.1'
+    implementation 'me.weishu:free_reflection:3.0.1'
     implementation project(':antidetect')
 //    implementation project(':kmdc')
     implementation files('libs/kmdc_v1.0.2r.aar')

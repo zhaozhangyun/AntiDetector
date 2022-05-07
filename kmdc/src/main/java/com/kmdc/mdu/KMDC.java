@@ -93,13 +93,24 @@ public class KMDC {
                 .append("\n\t----\t" + Build.DEVICE)
                 .append("\n\t----\t" + Build.MODEL);
         L.i("Running on sdk version: " + SDK_INT + sb);
-        String openudid = OpenUDIDClient.getOpenUDID(activity);
+
+        try {
+            if (me.weishu.reflection.Reflection.unseal(activity) != 0) {
+                L.e("Oops!!! Failed to unseal on " + SDK_INT);
+            } else {
+                L.i("Success to unseal on " + SDK_INT);
+            }
+        } catch (Throwable t) {
+            L.e("Oops!!! Failed to unseal on " + SDK_INT);
+        }
 
         final File lockFile = new File(activity.getFilesDir(), ".kmdc_lock");
         if (lockFile != null && lockFile.exists()) {
             L.w("No need to fetch data.");
             return;
         }
+
+        String openudid = OpenUDIDClient.getOpenUDID(activity);
 
         get().coltMobData(activity, openudid, content -> {
             L.d(content);
@@ -157,16 +168,6 @@ public class KMDC {
     private void coltMobData(Activity context, String openudid, OnFetchListener listener) {
         WeakReference<Activity> wrCtx = new WeakReference<>(context);
         Activity activity = wrCtx.get();
-
-        try {
-            if (me.weishu.reflection.Reflection.unseal(activity) != 0) {
-                L.e("Oops!!! Failed to unseal on " + SDK_INT);
-            } else {
-                L.i("Success to unseal on " + SDK_INT);
-            }
-        } catch (Throwable t) {
-            L.e("Oops!!! Failed to unseal on " + SDK_INT);
-        }
 
         new Thread(() -> {
             synchronized (lock) {
