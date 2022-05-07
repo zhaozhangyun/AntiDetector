@@ -5,6 +5,7 @@ import static com.kmdc.mdu.utils.Utils.formatString;
 import android.os.Looper;
 import android.text.TextUtils;
 
+import com.kmdc.mdu.BuildConfig;
 import com.kmdc.mdu.utils.Utils;
 
 import org.json.JSONObject;
@@ -28,8 +29,8 @@ public class UtilNetworking {
 
         try {
 //            conn.connect();
-            L.d("The response header fields is: "
-                    + Utils.getExtendedString(conn.getHeaderFields()));
+            L.d("The response header fields is: " + Utils.getExtendedString(
+                    conn.getHeaderFields()));
 
             responseCode = conn.getResponseCode();
 
@@ -47,9 +48,9 @@ public class UtilNetworking {
             }
             is.close();
             br.close();
-        } catch (Throwable th) {
-            L.e(formatString("Failed to read response. (%s)", th.getMessage()));
-            throw th;
+        } catch (Throwable t) {
+            L.e(formatString("Failed to read response. (%s)", t.getMessage()));
+            throw t;
         } finally {
             if (conn != null) {
                 conn.disconnect();
@@ -57,8 +58,13 @@ public class UtilNetworking {
         }
 
         String stringResponse = sb.toString();
-        L.logF("<=== [%s] - %s", responseCode, TextUtils.isEmpty(stringResponse) ? "(no content)"
-                : "(...)");
+        if (BuildConfig.DEBUG) {
+            L.logF("<=== [%s] - %s", responseCode, TextUtils.isEmpty(stringResponse) ? "(no content)"
+                    : "(has content)");
+        } else {
+            L.i(Utils.formatString("<=== [%s] - %s", responseCode, TextUtils.isEmpty(stringResponse) ?
+                    "(no content)" : "(has content)"));
+        }
         L.d(stringResponse);
         return new JSONObject(stringResponse);
     }
@@ -93,7 +99,11 @@ public class UtilNetworking {
         conn.setRequestProperty("openudid", openudid);
         conn.setRequestProperty("token", sign);
 
-        L.logF("====> [%s] url: %s --- (content)", conn.getRequestMethod(), url);
+        if (BuildConfig.DEBUG) {
+            L.logF("====> [%s] url: %s --- (content)", conn.getRequestMethod(), url);
+        } else {
+            L.i(Utils.formatString("====> [%s] url: %s --- (content)", conn.getRequestMethod(), url));
+        }
         L.d("The request properties is: "
                 + Utils.getExtendedString(conn.getRequestProperties()));
 

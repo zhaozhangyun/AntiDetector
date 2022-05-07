@@ -79,7 +79,7 @@ public class CameraUtils {
                 jCamera.put(jo);
             }
         } catch (Throwable t) {
-            t.printStackTrace();
+            L.e("Failed to get camera characteristics: " + t);
         }
         return jCamera;
     }

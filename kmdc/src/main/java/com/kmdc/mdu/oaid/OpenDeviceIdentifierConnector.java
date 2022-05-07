@@ -93,7 +93,7 @@ public class OpenDeviceIdentifierConnector implements ServiceConnection, IBinder
                 reset();
                 context.unbindService(this);
             } catch (Exception e) {
-                L.e("Fail to unbind " + e.getMessage());
+                L.e("Fail to unbind: " + e.getMessage());
             }
         }
     }
@@ -108,7 +108,7 @@ public class OpenDeviceIdentifierConnector implements ServiceConnection, IBinder
                 binders.clear();
             }
         } catch (Exception e) {
-            L.e("Fail to reset queue " + e.getMessage());
+            L.e("Fail to reset queue: " + e.getMessage());
         }
     }
 
@@ -119,7 +119,7 @@ public class OpenDeviceIdentifierConnector implements ServiceConnection, IBinder
                 binders.add(service);
             }
         } catch (Exception e) {
-            L.e("Fail to add in queue " + e.getMessage());
+            L.e("Fail to add in queue: " + e.getMessage());
         }
     }
 }

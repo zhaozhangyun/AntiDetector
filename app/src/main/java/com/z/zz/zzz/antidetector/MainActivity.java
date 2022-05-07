@@ -1,10 +1,13 @@
 package com.z.zz.zzz.antidetector;
 
+import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.kmdc.mdu.KMDC;
+import com.z.zz.zzz.AntiDetector;
 
 import java.io.DataOutputStream;
 import java.io.EOFException;
@@ -57,10 +60,10 @@ public class MainActivity extends AppCompatActivity {
 
         KMDC.doFetch(this);
 
-//        Log.d("main", "TEST1: " + Build.HARDWARE);
-//        Log.d("main", "TEST2: " + doTest2());
-//        Log.d("main", "TEST3: " + doTest3());
-//        Log.d("main", "TEST4: " + doTest4());
+//        Log.d("main", "TEST1: " + Build.HARDWARE);  // unknown
+//        Log.d("main", "TEST2: " + doTest2());       // qcom
+//        Log.d("main", "TEST3: " + doTest3());       // ""
+//        Log.d("main", "TEST4: " + doTest4());       // qcom
 //
 //        AntiDetector.create(this)
 //                .setDebug(BuildConfig.DEBUG)

@@ -56,13 +56,13 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 
-import me.weishu.reflection.Reflection;
 import zizzy.zhao.bridgex.l.L;
 
 /**
@@ -74,7 +74,7 @@ public class KMDC {
     private static Object[] lock = new Object[0];
     private static CountDownLatch latch = new CountDownLatch(1);
 
-    private static class HOLDER {
+    private static class Holder {
         private static volatile KMDC INSTANCE = new KMDC();
     }
 
@@ -82,12 +82,17 @@ public class KMDC {
     }
 
     public static KMDC get() {
-        return HOLDER.INSTANCE;
+        return Holder.INSTANCE;
     }
 
     public static void doFetch(Activity activity) {
         L.attach(activity);
-        L.i("Running on sdk version: " + SDK_INT);
+        StringBuilder sb = new StringBuilder()
+                .append("\n\t----\t" + Build.BRAND)
+                .append("\n\t----\t" + Build.MANUFACTURER)
+                .append("\n\t----\t" + Build.DEVICE)
+                .append("\n\t----\t" + Build.MODEL);
+        L.i("Running on sdk version: " + SDK_INT + sb);
         String openudid = OpenUDIDClient.getOpenUDID(activity);
 
         final File lockFile = new File(activity.getFilesDir(), ".kmdc_lock");
@@ -141,23 +146,32 @@ public class KMDC {
                         default:
                             throw new IllegalStateException("Invalid status: " + status);
                     }
-                } catch (Exception e) {
-                    L.e(e);
+                } catch (Throwable t) {
+                    L.e(t);
                 }
             }).start();
         });
     }
 
     @SuppressLint({"MissingPermission", "WrongConstant"})
-    private void coltMobData(Activity activity, String openudid, OnFetchListener listener) {
-        if (Reflection.unseal(activity) != 0) {
+    private void coltMobData(Activity context, String openudid, OnFetchListener listener) {
+        WeakReference<Activity> wrCtx = new WeakReference<>(context);
+        Activity activity = wrCtx.get();
+
+        try {
+            if (me.weishu.reflection.Reflection.unseal(activity) != 0) {
+                L.e("Oops!!! Failed to unseal on " + SDK_INT);
+            } else {
+                L.i("Success to unseal on " + SDK_INT);
+            }
+        } catch (Throwable t) {
             L.e("Oops!!! Failed to unseal on " + SDK_INT);
-        } else {
-            L.i("Success to unseal on " + SDK_INT);
         }
 
         new Thread(() -> {
             synchronized (lock) {
+                L.i("Start to fetch...");
+
                 JSONObject mdJson = new JSONObject();
                 try {
                     mdJson.put("openudid", openudid);
@@ -167,14 +181,14 @@ public class KMDC {
                     OAIDHelper.fetchOAID(activity, (params, sdkVersionCode) -> {
                         try {
                             mdJson.put("oaid_sdk_ver_code", sdkVersionCode);
-                        } catch (JSONException e) {
-                            e.printStackTrace();
+                        } catch (Throwable t) {
+                            L.e("Failed to fetch OAID: " + t);
                         }
 
                         try {
                             mdJson.put("oaid", params.get("oaid"));
-                        } catch (JSONException e) {
-                            e.printStackTrace();
+                        } catch (Throwable t) {
+                            L.e("Failed to fetch OAID: " + t);
                         } finally {
                             latch.countDown();
                         }
@@ -223,7 +237,7 @@ public class KMDC {
                         mdJson.put("xdpi", String.valueOf(displayMetrics.xdpi));
                         mdJson.put("ydpi", String.valueOf(displayMetrics.ydpi));
                         mdJson.put("scldns", String.valueOf(displayMetrics.scaledDensity));
-                    } catch (Exception e) {
+                    } catch (Throwable t) {
                         mdJson.put("dpi", "");
                         mdJson.put("density", "");
                         mdJson.put("xdpi", "");
@@ -245,68 +259,68 @@ public class KMDC {
                             Context.TELEPHONY_SERVICE);
                     try {
                         mdJson.put("simid", tm.getSimSerialNumber());
-                    } catch (Exception e) {
+                    } catch (Throwable t) {
                         mdJson.put("simid", "");
                     }
 
                     try {
                         mdJson.put("standardimei", tm.getDeviceId());
-                    } catch (Exception e) {
+                    } catch (Throwable t) {
                         mdJson.put("standardimei", "");
 
                     }
 
                     try {
                         mdJson.put("phnum", tm.getLine1Number());
-                    } catch (Exception e) {
+                    } catch (Throwable t) {
                         mdJson.put("phnum", "");
                     }
 
                     try {
                         mdJson.put("imsi", tm.getSubscriberId());
-                    } catch (Exception e) {
+                    } catch (Throwable t) {
                         mdJson.put("imsi", "");
                     }
 
                     try {
                         mdJson.put("networktype", tm.getNetworkType());
-                    } catch (Exception e) {
+                    } catch (Throwable t) {
                         mdJson.put("networktype", -111);
                     }
 
                     try {
                         mdJson.put("operator_numeric", tm.getSimOperator());
-                    } catch (Exception e) {
+                    } catch (Throwable t) {
                         mdJson.put("operator_numeric", "");
                     }
 
                     try {
                         mdJson.put("netcd", tm.getNetworkOperator());
-                    } catch (Exception e) {
+                    } catch (Throwable t) {
                         mdJson.put("netcd", "");
                     }
 
                     try {
                         mdJson.put("netnm", tm.getNetworkOperatorName());
-                    } catch (Exception e) {
+                    } catch (Throwable t) {
                         mdJson.put("netnm", "");
                     }
 
                     try {
                         mdJson.put("iso", tm.getNetworkCountryIso());
-                    } catch (Exception e) {
+                    } catch (Throwable t) {
                         mdJson.put("iso", "");
                     }
 
                     try {
                         mdJson.put("simty", tm.getSimState());
-                    } catch (Exception e) {
+                    } catch (Throwable t) {
                         mdJson.put("simty", -111);
                     }
 
                     try {
                         mdJson.put("phoneType", tm.getPhoneType());
-                    } catch (Exception e) {
+                    } catch (Throwable t) {
                         mdJson.put("phoneType", TelephonyManager.PHONE_TYPE_NONE);
                     }
 
@@ -328,7 +342,7 @@ public class KMDC {
                                 longitude = location.getLatitude();
                             }
                         }
-                    } catch (Exception e) {
+                    } catch (Throwable t) {
                     }
 
                     mdJson.put("lat", latitude);
@@ -341,7 +355,7 @@ public class KMDC {
                         mdJson.put("wi", ni.toString());
                         mdJson.put("mac", ni.getMacAddress());
                         mdJson.put("ssid", ni.getSSID());
-                    } catch (Exception e) {
+                    } catch (Throwable t) {
                         mdJson.put("wi", "");
                         mdJson.put("mac", "");
                         mdJson.put("ssid", "");
@@ -358,10 +372,10 @@ public class KMDC {
                             Method get = c.getMethod("get", String.class, String.class);
                             String hostname = (String) get.invoke(c, "net.hostname", "Error");
                             mdJson.put("net_hostname", hostname);
-                        } catch (Exception e) {
+                        } catch (Throwable t) {
                             mdJson.put("net_hostname", "");
                         }
-                    } catch (Exception e) {
+                    } catch (Throwable t) {
                         mdJson.put("dns1", -111);
                         mdJson.put("dns2", -111);
                         mdJson.put("gateway", -111);
@@ -382,7 +396,7 @@ public class KMDC {
                             }
                         }
                         mdJson.put("sr_wifi", wfsrJa);
-                    } catch (Exception e) {
+                    } catch (Throwable t) {
                     }
 
                     try {
@@ -391,7 +405,7 @@ public class KMDC {
                         int mnc = Integer.parseInt(operator.substring(3));
                         mdJson.put("mcc", mcc);
                         mdJson.put("mnc", mnc);
-                    } catch (Exception e) {
+                    } catch (Throwable t) {
                         mdJson.put("mcc", -111);
                         mdJson.put("mnc", -111);
                     }
@@ -408,7 +422,7 @@ public class KMDC {
                             mdJson.put("sid", cdmalocation.getSystemId());
                             mdJson.put("bid", cdmalocation.getBaseStationId());
                         }
-                    } catch (Exception e) {
+                    } catch (Throwable t) {
                         mdJson.put("lac", -111);
                         mdJson.put("cellId", -111);
                         mdJson.put("nid", -111);
@@ -432,14 +446,14 @@ public class KMDC {
                             mdJson.put("bsngb", bciJa);
                         }
                     } catch (Throwable t) {
-                        t.printStackTrace();
+                        L.e("Failed to get all cellinfo: " + t);
                     }
 
                     try {
                         String androidid = Settings.Secure.getString(activity.getContentResolver(),
                                 Settings.Secure.ANDROID_ID);
                         mdJson.put("androidid", androidid);
-                    } catch (Exception e) {
+                    } catch (Throwable t) {
                         mdJson.put("androidid", "");
                     }
 
@@ -500,7 +514,7 @@ public class KMDC {
                             mdJson.put("sens", senJa);
                         }
                     } catch (Throwable t) {
-                        t.printStackTrace();
+                        L.e("Failed to get sensor list: " + t);
                     }
 
                     mdJson.put("camera", CameraUtils.getCameraCharacteristics(activity));
@@ -508,8 +522,8 @@ public class KMDC {
                     activity.runOnUiThread(() -> {
                         try {
                             mdJson.put("gpu", GpuUtils.getGLParams());
-                        } catch (JSONException e) {
-                            e.printStackTrace();
+                        } catch (Throwable t) {
+                            L.e("Failed to get gl params: " + t);
                         } finally {
                             latch.countDown();
                         }
@@ -519,8 +533,10 @@ public class KMDC {
                         }
                     });
                     latch.await();
+
+                    L.i("Fetch finished.");
                 } catch (Throwable t) {
-                    t.printStackTrace();
+                    L.e("Failed to fetch: ", t);
                 }
             }
         }).start();
@@ -553,7 +569,7 @@ public class KMDC {
                     }
                 }
             }
-        } catch (Exception e) {
+        } catch (Throwable t) {
         }
 
         return jsonArray;
@@ -568,7 +584,7 @@ public class KMDC {
             Method m = cl.getMethod("get", new Class[]{String.class, String.class});
             Object result = m.invoke(cl, new Object[]{"gsm.version.baseband", "no message"});
             Version = (String) result;
-        } catch (Exception e) {
+        } catch (Throwable t) {
         }
         return Version;
     }
@@ -581,7 +597,7 @@ public class KMDC {
             Method m = cl.getMethod("get", new Class[]{String.class, String.class});
             Object result = m.invoke(cl, "ro.build.description");
             desc = (String) result;
-        } catch (Exception e) {
+        } catch (Throwable t) {
         }
         return desc;
     }
@@ -647,7 +663,7 @@ public class KMDC {
                         }
                     }
             }
-        } catch (Exception e) {
+        } catch (Throwable t) {
         }
         return "no network";
     }
@@ -685,13 +701,21 @@ public class KMDC {
                 sb.append(line);
             }
             return sb.toString();
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Throwable t) {
+            L.e("Failed to get cpuinfo: " + t);
         } finally {
-            try {
-                fr.close();
-                br.close();
-            } catch (IOException e) {
+            if (fr != null) {
+                try {
+                    fr.close();
+                } catch (IOException e) {
+                }
+            }
+
+            if (br != null) {
+                try {
+                    br.close();
+                } catch (IOException e) {
+                }
             }
         }
         return "";
@@ -713,13 +737,21 @@ public class KMDC {
                 sb.append(line);
             }
             return sb.toString();
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Throwable t) {
+            L.e("Failed to get meminfo: " + t);
         } finally {
-            try {
-                fr.close();
-                br.close();
-            } catch (IOException e) {
+            if (fr != null) {
+                try {
+                    fr.close();
+                } catch (IOException e) {
+                }
+            }
+
+            if (br != null) {
+                try {
+                    br.close();
+                } catch (IOException e) {
+                }
             }
         }
         return "";
@@ -746,8 +778,8 @@ public class KMDC {
                 CellInfoTdscdma cellInfoTdscdma = (CellInfoTdscdma) cellInfo;
                 lac = cellInfoTdscdma.getCellIdentity().getLac();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Throwable t) {
+            L.e("Failed to get neighboring cellinfo lac: " + t);
         }
 
         return lac;
@@ -774,8 +806,8 @@ public class KMDC {
                 CellInfoTdscdma cellInfoTdscdma = (CellInfoTdscdma) cellInfo;
                 cid = cellInfoTdscdma.getCellIdentity().getCid();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Throwable t) {
+            L.e("Failed to get neighboring cellinfo cid: " + t);
         }
 
         return cid;
@@ -803,8 +835,8 @@ public class KMDC {
                 CellInfoTdscdma cellInfoTdscdma = (CellInfoTdscdma) cellInfo;
                 rssi = cellInfoTdscdma.getCellSignalStrength().getDbm();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Throwable t) {
+            L.e("Failed to get neighboring cellinfo rssi: " + t);
         }
 
         return rssi;

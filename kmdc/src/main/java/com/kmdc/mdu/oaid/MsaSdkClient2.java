@@ -109,20 +109,19 @@ class MsaSdkClient2 {
                         new Class[]{Context.class, boolean.class, iIdentifierListener},
                         context, msaInternalLogging, iIdentifierListenerProxy
                 );
-            } catch (Throwable th) {
-                L.e("call invokeMethod error: " + th);
+            } catch (Throwable t) {
+                L.e("call invokeMethod error: " + t);
             }
 
             if (!isError(result)) {
                 return oaidHolder.poll(maxWaitTimeInMilli, TimeUnit.MILLISECONDS);
             }
         } catch (NoClassDefFoundError ex) {
-            L.e("Couldn't find msa sdk " + ex.getMessage());
+            L.e("Couldn't find msa sdk: " + ex.getMessage());
         } catch (InterruptedException e) {
-            L.e("Waiting to read oaid from callback interrupted: "
-                    + e.getMessage());
+            L.e("Waiting to read oaid from callback interrupted: " + e.getMessage());
         } catch (Throwable t) {
-            L.e("Oaid reading process failed " + t.getMessage());
+            L.e("Oaid reading process failed: " + t.getMessage());
         }
 
         return null;
@@ -185,9 +184,9 @@ class MsaSdkClient2 {
                         "isSupported",
                         new Class[]{}
                 );
-                L.d( "isSupported: " + isSupported);
-            } catch (Throwable th) {
-                th.printStackTrace();
+                L.d("isSupported: " + isSupported);
+            } catch (Throwable t) {
+                L.e("Failed to invoke method: " + t);
             }
 
             try {
@@ -196,9 +195,9 @@ class MsaSdkClient2 {
                         "isLimited",
                         new Class[]{}
                 );
-                L.d( "isLimited: " + isLimited);
-            } catch (Throwable th) {
-                th.printStackTrace();
+                L.d("isLimited: " + isLimited);
+            } catch (Throwable t) {
+                L.e("Failed to invoke method: " + t);
             }
 
             try {
@@ -207,9 +206,9 @@ class MsaSdkClient2 {
                         "getVAID",
                         new Class[]{}
                 );
-                L.d( "vaid: " + vaid);
-            } catch (Throwable th) {
-                th.printStackTrace();
+                L.d("vaid: " + vaid);
+            } catch (Throwable t) {
+                L.e("Failed to invoke method: " + t);
             }
 
             try {
@@ -218,9 +217,9 @@ class MsaSdkClient2 {
                         "getAAID",
                         new Class[]{}
                 );
-                L.d( "aaid: " + aaid);
-            } catch (Throwable th) {
-                th.printStackTrace();
+                L.d("aaid: " + aaid);
+            } catch (Throwable t) {
+                L.e("Failed to invoke method: " + t);
             }
 
             try {
@@ -229,7 +228,7 @@ class MsaSdkClient2 {
                         "getOAID",
                         new Class[]{}
                 );
-                L.d( "oaid: " + oaid);
+                L.d("oaid: " + oaid);
 
                 if (oaid == null) {
                     // so to avoid waiting for timeout
@@ -237,8 +236,8 @@ class MsaSdkClient2 {
                 } else {
                     oaidHolder.offer(oaid);
                 }
-            } catch (Throwable th) {
-                th.printStackTrace();
+            } catch (Throwable t) {
+                L.e("Failed to invoke method: " + t);
             }
 
             return null;

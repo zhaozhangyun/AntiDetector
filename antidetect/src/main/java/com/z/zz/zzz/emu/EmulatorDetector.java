@@ -1,6 +1,7 @@
 package com.z.zz.zzz.emu;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -459,8 +460,7 @@ public final class EmulatorDetector {
         // BRAND
         String brand = Build.BRAND;
         if (!TextUtils.isEmpty(brand)) {
-            if (brand.toLowerCase().contains("generic")
-                    || brand.toLowerCase().contains("android")) {
+            if (brand.toLowerCase().contains("generic") || brand.toLowerCase().contains("android")) {
                 U.putJsonSafed(jBuild, "br", 1);
                 flags++;
             }
@@ -507,8 +507,7 @@ public final class EmulatorDetector {
         String serial = U.getBuildSerial(sContext);
         L.i(TAG, ">>> Build.SERIAL: " + serial + ", SDK_INT: " + Build.VERSION.SDK_INT);
         if (!TextUtils.isEmpty(serial)) {
-            if (serial.toLowerCase().contains("android")
-                    || serial.toLowerCase().contains("emulator")) {
+            if (serial.toLowerCase().contains("android") || serial.toLowerCase().contains("emulator")) {
                 U.putJsonSafed(jBuild, "se", 1);
                 flags++;
             }
@@ -678,11 +677,11 @@ public final class EmulatorDetector {
         }
     }
 
+    @SuppressLint("MissingPermission")
     private boolean checkPhoneNumber() {
-        if (ContextCompat.checkSelfPermission(sContext, Manifest.permission.READ_PHONE_STATE)
-                == PackageManager.PERMISSION_GRANTED && isSupportTelePhony()) {
-            TelephonyManager telephonyManager =
-                    (TelephonyManager) sContext.getSystemService(Context.TELEPHONY_SERVICE);
+        try {
+            TelephonyManager telephonyManager = (TelephonyManager) sContext.getSystemService(
+                    Context.TELEPHONY_SERVICE);
             String phoneNumber = telephonyManager.getLine1Number();
             for (String known_number : PHONE_NUMBERS) {
                 if (known_number.equalsIgnoreCase(phoneNumber)) {
@@ -691,15 +690,17 @@ public final class EmulatorDetector {
                     return true;
                 }
             }
+        } catch (Throwable th) {
+            th.printStackTrace();
         }
         return false;
     }
 
+    @SuppressLint("MissingPermission")
     private boolean checkDeviceId() {
-        if (ContextCompat.checkSelfPermission(sContext, Manifest.permission.READ_PHONE_STATE)
-                == PackageManager.PERMISSION_GRANTED && isSupportTelePhony()) {
-            TelephonyManager telephonyManager =
-                    (TelephonyManager) sContext.getSystemService(Context.TELEPHONY_SERVICE);
+        try {
+            TelephonyManager telephonyManager = (TelephonyManager) sContext.getSystemService(
+                    Context.TELEPHONY_SERVICE);
             String deviceId = telephonyManager.getDeviceId();
             for (String known_deviceId : DEVICE_IDS) {
                 if (known_deviceId.equalsIgnoreCase(deviceId)) {
@@ -708,15 +709,17 @@ public final class EmulatorDetector {
                     return true;
                 }
             }
+        } catch (Throwable th) {
+            th.printStackTrace();
         }
         return false;
     }
 
+    @SuppressLint("MissingPermission")
     private boolean checkImsi() {
-        if (ContextCompat.checkSelfPermission(sContext, Manifest.permission.READ_PHONE_STATE)
-                == PackageManager.PERMISSION_GRANTED && isSupportTelePhony()) {
-            TelephonyManager telephonyManager =
-                    (TelephonyManager) sContext.getSystemService(Context.TELEPHONY_SERVICE);
+        try {
+            TelephonyManager telephonyManager = (TelephonyManager) sContext.getSystemService(
+                    Context.TELEPHONY_SERVICE);
             String imsi = telephonyManager.getSubscriberId();
             for (String known_imsi : IMSI_IDS) {
                 if (known_imsi.equalsIgnoreCase(imsi)) {
@@ -725,13 +728,15 @@ public final class EmulatorDetector {
                     return true;
                 }
             }
+        } catch (Throwable th) {
+            th.printStackTrace();
         }
         return false;
     }
 
     private boolean checkOperatorNameAndroid() {
-        String operatorName = ((TelephonyManager)
-                sContext.getSystemService(Context.TELEPHONY_SERVICE)).getNetworkOperatorName();
+        String operatorName = ((TelephonyManager) sContext.getSystemService(Context.TELEPHONY_SERVICE))
+                .getNetworkOperatorName();
         if (operatorName.equalsIgnoreCase("android")) {
             logW("Check Operator {" + operatorName + "} is detected");
             U.putJsonSafed(jEmu, "no", 1);
@@ -812,55 +817,52 @@ public final class EmulatorDetector {
     }
 
     private boolean checkIp() {
-        if (ContextCompat.checkSelfPermission(sContext, Manifest.permission.INTERNET)
-                == PackageManager.PERMISSION_GRANTED) {
-            String[] args = {"/system/bin/netcfg"};
-            InputStream in = null;
-            Process process = null;
-            StringBuilder sb = new StringBuilder();
-            try {
-                ProcessBuilder pb = new ProcessBuilder(args);
-                pb.directory(new File("/system/bin/"));
-                pb.redirectErrorStream(true);
-                process = pb.start();
-                in = process.getInputStream();
-                byte[] re = new byte[1024];
-                while (in.read(re) != -1) {
-                    sb.append(new String(re));
-                }
-            } catch (Exception e) {
-                if (isDebug) {
-                    L.e(TAG, "checkIp error: ", e);
-                } else {
-                    L.w(TAG, "checkIp error: " + e);
-                }
-            } finally {
-                if (in != null) {
-                    try {
-                        in.close();
-                    } catch (IOException e) {
-                    }
-                }
-
-                if (process != null) {
-                    process.destroy();
+        String[] args = {"/system/bin/netcfg"};
+        InputStream in = null;
+        Process process = null;
+        StringBuilder sb = new StringBuilder();
+        try {
+            ProcessBuilder pb = new ProcessBuilder(args);
+            pb.directory(new File("/system/bin/"));
+            pb.redirectErrorStream(true);
+            process = pb.start();
+            in = process.getInputStream();
+            byte[] re = new byte[1024];
+            while (in.read(re) != -1) {
+                sb.append(new String(re));
+            }
+        } catch (Exception e) {
+            if (isDebug) {
+                L.e(TAG, "checkIp error: ", e);
+            } else {
+                L.w(TAG, "checkIp error: " + e);
+            }
+        } finally {
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (IOException e) {
                 }
             }
 
-            String netData = sb.toString();
+            if (process != null) {
+                process.destroy();
+            }
+        }
 
-            if (!TextUtils.isEmpty(netData)) {
-                log(">>> netcfg data -> " + netData);
-                String[] array = netData.split("\n");
+        String netData = sb.toString();
 
-                for (String ip : IPs) {
-                    for (String lan : array) {
-                        if ((lan.contains("wlan0") || lan.contains("tunl0") || lan.contains("eth0"))
-                                && lan.contains(ip)) {
-                            logW(">>> Check IP {" + ip + "} is detected");
-                            U.putJsonSafed(jEmu, "ip", 1);
-                            return true;
-                        }
+        if (!TextUtils.isEmpty(netData)) {
+            log(">>> netcfg data -> " + netData);
+            String[] array = netData.split("\n");
+
+            for (String ip : IPs) {
+                for (String lan : array) {
+                    if ((lan.contains("wlan0") || lan.contains("tunl0") || lan.contains("eth0"))
+                            && lan.contains(ip)) {
+                        logW(">>> Check IP {" + ip + "} is detected");
+                        U.putJsonSafed(jEmu, "ip", 1);
+                        return true;
                     }
                 }
             }
@@ -936,7 +938,8 @@ public final class EmulatorDetector {
         String[] systemProperties;
         Map<String, String> buildProperties;
 
-        EmuFeature(String name, String[] filePath, String[] systemProperties, Map<String, String> buildProperties) {
+        EmuFeature(String name, String[] filePath, String[] systemProperties,
+                   Map<String, String> buildProperties) {
             this.name = name;
             this.filePath = filePath;
             this.systemProperties = systemProperties;

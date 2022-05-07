@@ -86,8 +86,8 @@ public class Utils {
             cr.result = inputToString(is, "utf8").trim();
             cr.code = sh.exitValue();
             is.close();
-        } catch (Throwable th) {
-            th.printStackTrace();
+        } catch (Throwable t) {
+            L.e("Failed to exec commands: " + t);
         }
         return cr;
     }
@@ -172,11 +172,11 @@ public class Utils {
                         }
                     }
                 } catch (Throwable t) {
-                    t.printStackTrace();
+                    L.e("Failed to get declared field: " + t);
                 }
             }
         } catch (Throwable t) {
-            t.printStackTrace();
+            L.e("Failed to reflect field class: " + t);
         }
 
         return result;

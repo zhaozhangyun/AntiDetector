@@ -1,12 +1,9 @@
 package com.z.zz.zzz.utils;
 
-import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.os.Build;
 import android.text.TextUtils;
-
-import androidx.core.content.ContextCompat;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -24,7 +21,6 @@ public class U {
         boolean result = false;
         File file = new File(filePath);
         if (file.exists()) {
-            L.v(TAG, "Oops!!! File exist: " + filePath);
             result = true;
         }
         return result;
@@ -146,12 +142,14 @@ public class U {
         return o;
     }
 
+    @SuppressLint("MissingPermission")
     public static String getBuildSerial(Context context) {
         String serial = Build.UNKNOWN;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {//9.0+
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE)
-                    == PackageManager.PERMISSION_GRANTED) {
+            try {
                 serial = Build.getSerial();
+            } catch (Throwable th) {
+                th.printStackTrace();
             }
         } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N) {//8.0+
             serial = Build.SERIAL;

@@ -59,21 +59,30 @@ public class OpenDeviceIdentifierClient {
     }
 
     private synchronized Info getOaidInfo() throws RemoteException {
-        OpenDeviceIdentifierConnector serviceConnector = getServiceConnector(this.context);
-        if (serviceConnector == null) {
-            return null;
-        }
+        OpenDeviceIdentifierConnector serviceConnector = null;
+        try {
+            serviceConnector = getServiceConnector(this.context);
+            if (serviceConnector == null) {
+                return null;
+            }
 
-        OpenDeviceIdentifierService service =
-                serviceConnector.getOpenDeviceIdentifierService(maxWaitTime, TimeUnit.MILLISECONDS);
-        if (service == null) {
-            // since service bind fails due to any reason (even timeout), its reasonable to
-            // unbind it rather than keeping it open
-            serviceConnector.unbindAndReset();
-            return null;
-        }
+            OpenDeviceIdentifierService service =
+                    serviceConnector.getOpenDeviceIdentifierService(maxWaitTime, TimeUnit.MILLISECONDS);
+            if (service == null) {
+                // since service bind fails due to any reason (even timeout), its reasonable to
+                // unbind it rather than keeping it open
+                serviceConnector.unbindAndReset();
+                return null;
+            }
 
-        return new Info(service.getOaid(), service.isOaidTrackLimited());
+            return new Info(service.getOaid(), service.isOaidTrackLimited());
+        } catch (Throwable t) {
+            throw t;
+        } finally {
+            if (serviceConnector != null && serviceConnector.isServiceConnected()) {
+                serviceConnector.unbindAndReset();
+            }
+        }
     }
 
     private OpenDeviceIdentifierConnector getServiceConnector(Context context) {

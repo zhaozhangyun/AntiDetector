@@ -1,7 +1,5 @@
 package com.kmdc.mdu.oaid;
 
-import static android.os.Build.VERSION.SDK_INT;
-
 import android.content.Context;
 
 import com.bun.miitmdid.core.MdidSdkHelper;
@@ -18,12 +16,6 @@ public class CoreOaid {
     }
 
     public static void readOaid(Context context) {
-        if (me.weishu.reflection.Reflection.unseal(context) != 0) {
-            L.e("Oops!!! Failed to unseal on " + SDK_INT);
-        } else {
-            L.i("Success to unseal on " + SDK_INT);
-        }
-
         readOaid();
 
         try {
@@ -48,15 +40,15 @@ public class CoreOaid {
                 if (isMsaSdkAvailable) {
                     L.i("Success to call JLibrary.InitEntry");
                 }
-            } catch (Throwable th) {
+            } catch (Throwable t1) {
                 isMsaSdkAvailable = false;
-                L.w("Error during msa sdk initialization: " + th.getMessage());
+                L.w("Error during msa sdk initialization: " + t1);
                 try {
                     isMsaSdkAvailable = Reflection.forName(
                             "com.bun.miitmdid.core.MdidSdkHelper") != null;
-                } catch (Throwable th1) {
+                } catch (Throwable t2) {
                     isMsaSdkAvailable = false;
-                    L.w("Error during msa sdk initialization: " + th1.getMessage());
+                    L.w("Error during msa sdk initialization: " + t2);
                 }
             }
         }
@@ -64,7 +56,7 @@ public class CoreOaid {
         try {
             SDK_VERSION_CODE = MdidSdkHelper.SDK_VERSION_CODE;
         } catch (Throwable t) {
-            t.printStackTrace();
+            L.w("Failed to read sdk version code: " + t);
         }
 
         L.i("isMsaSdkAvailable: " + isMsaSdkAvailable + ", sdkVersionCode: " + SDK_VERSION_CODE);
