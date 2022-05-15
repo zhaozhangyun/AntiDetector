@@ -18,14 +18,16 @@ public class CameraUtils {
 
     public static synchronized JSONArray getCameraCharacteristics(Context context) {
         JSONArray jCamera = new JSONArray();
-        if (!context.getPackageManager().hasSystemFeature("android.hardware.camera.any")) {
-            L.w("Oops!!! You don't has system feature - android.hardware.camera.any");
-            return jCamera;
-        }
+//        if (!context.getPackageManager().hasSystemFeature("android.hardware.camera.any")) {
+//            L.w("Oops!!! You don't has system feature - android.hardware.camera.any");
+//            return jCamera;
+//        }
 
         CameraManager cm = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
+        L.d("CameraManager: " + cm);
         try {
             String[] cameraIdList = cm.getCameraIdList();
+            L.d("cameraIdList: " + Arrays.toString(cameraIdList));
             for (int i = 0; i < cameraIdList.length; ++i) {
                 JSONObject jo = new JSONObject();
                 String cameraId = cameraIdList[i];
@@ -33,6 +35,7 @@ public class CameraUtils {
                 jo.put("cameraId", cameraId);
                 CameraCharacteristics cc = cm.getCameraCharacteristics(cameraId);
                 List<Key<?>> keys = cc.getKeys();
+                L.d("CameraCharacteristics.Key list: " + keys);
                 Iterator<Key<?>> it = keys.listIterator();
                 while (it.hasNext()) {
                     Key key = it.next();

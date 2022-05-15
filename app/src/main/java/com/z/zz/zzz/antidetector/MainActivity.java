@@ -1,13 +1,12 @@
 package com.z.zz.zzz.antidetector;
 
-import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.kmdc.mdu.KMDC;
-import com.z.zz.zzz.AntiDetector;
+import com.google.gson.Gson;
+import com.z.zz.zzz.antidetector.camera.CameraBean;
+import com.z.zz.zzz.antidetector.camera.CameraHelper;
 
 import java.io.DataOutputStream;
 import java.io.EOFException;
@@ -27,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-//        zizzy.zhao.bridgex.l.L.attach(this);
+        zizzy.zhao.bridgex.l.L.attach(this);
 
 //        CoreOaid.readOaid(this);
 //        OAIDHelper.fetchOAID(this, params -> {
@@ -58,7 +57,36 @@ public class MainActivity extends AppCompatActivity {
 //        String plainText = AESUtils.decrypt(cipherText, uuidStr, uuidStr);
 //        L.d("main", "plainText: " + plainText);
 
-        KMDC.doFetch(this);
+
+//        JSONArray ja = CameraUtils.getCameraCharacteristics(this);
+//        try {
+//            zizzy.zhao.bridgex.l.L.d("" + ja.toString(2));
+//        } catch (JSONException e) {
+//            e.printStackTrace();
+//        }
+
+        InputStream is = null;
+        try {
+            is = getResources().getAssets().open("camera.json");
+            int size = is.available();
+            byte[] buffer = new byte[size];
+            is.read(buffer);
+            String content = new String(buffer);
+            CameraBean cameraBean = new Gson().fromJson(content, CameraBean.class);
+            CameraHelper.parseCameraCharacteristics(cameraBean);
+//            zizzy.zhao.bridgex.l.L.d(CameraHelper.parseCameraCharacteristics(cameraBean));
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (is != null) {
+                try {
+                    is.close();
+                } catch (IOException e) {
+                }
+            }
+        }
+
+//        KMDC.doFetch(this);
 
 //        Log.d("main", "TEST1: " + Build.HARDWARE);  // unknown
 //        Log.d("main", "TEST2: " + doTest2());       // qcom

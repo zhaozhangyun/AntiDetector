@@ -36,10 +36,12 @@ dependencies {
 //    api 'com.zizzy-nbb.lib:antidetect:1.0.10'
     implementation 'me.weishu:free_reflection:3.0.1'
     implementation project(':antidetect')
-//    implementation project(':kmdc')
-    implementation files('libs/kmdc_v1.0.2r.aar')
+    implementation project(':kmdc')
+//    implementation files('libs/kmdc_v1.0.2r.aar')
     implementation files('libs/openudid.aar')
     implementation files('libs/bridgex-l.aar')
     implementation files('libs/bridgex-base.aar')
     implementation files('libs/oaid_sdk_1.0.25.aar')
+
+    implementation 'com.google.code.gson:gson:2.8.5'
 }
