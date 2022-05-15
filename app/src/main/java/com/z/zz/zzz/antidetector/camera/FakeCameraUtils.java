@@ -21,9 +21,9 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class CameraHelper {
+public class FakeCameraUtils {
 
-    private static final String TAG = "CameraHelper";
+    private static final String TAG = "FakeCameraUtils";
     private static final String StreamConfigurationMap =
             "android.hardware.camera2.params.StreamConfigurationMap";
     private static final String StreamConfiguration =
@@ -36,7 +36,7 @@ public class CameraHelper {
             "android.hardware.camera2.params.ReprocessFormatsMap";
     private static Pattern p1 = Pattern.compile("\\[(.*?)\\]");
 
-    public static Map<String, Map<String, Object>> parseCameraCharacteristics(CameraBean cameraBean) {
+    public static Map<String, Map<String, Object>> fakeCameraCharacteristics(CameraBean cameraBean) {
         if (cameraBean == null) {
             throw new IllegalStateException("Error to create CameraBean");
         }

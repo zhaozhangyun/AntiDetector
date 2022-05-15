@@ -6,7 +6,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.gson.Gson;
 import com.z.zz.zzz.antidetector.camera.CameraBean;
-import com.z.zz.zzz.antidetector.camera.CameraHelper;
+import com.z.zz.zzz.antidetector.camera.FakeCameraUtils;
 
 import java.io.DataOutputStream;
 import java.io.EOFException;
@@ -73,8 +73,8 @@ public class MainActivity extends AppCompatActivity {
             is.read(buffer);
             String content = new String(buffer);
             CameraBean cameraBean = new Gson().fromJson(content, CameraBean.class);
-            CameraHelper.parseCameraCharacteristics(cameraBean);
-//            zizzy.zhao.bridgex.l.L.d(CameraHelper.parseCameraCharacteristics(cameraBean));
+            FakeCameraUtils.fakeCameraCharacteristics(cameraBean);
+//            zizzy.zhao.bridgex.l.L.d(FakeCameraUtils.fakeCameraCharacteristics(cameraBean));
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
