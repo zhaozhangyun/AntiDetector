@@ -1,5 +1,5 @@
 {
-  "fakecamera": [
+  "fakeCameraBean": [
     {
       "cameraId": "0",
       "android.colorCorrection.availableAberrationModes": "[0, 1, 2]",

@@ -37,12 +37,15 @@ public class FakeCameraUtils {
     private static Pattern p1 = Pattern.compile("\\[(.*?)\\]");
     private static List<String> fakeCameraIdList = new LinkedList<>();
 
-    public static Map<String, Map<String, Object>> fakeCameraCharacteristics(FakeCameraBean cameraBean) {
-        if (cameraBean == null) {
-            throw new IllegalStateException("Error to create FakeCameraBean");
+    public static Map<String, Map<String, Object>> fakeCameraCharacteristics(
+            List<CameraCharacteristicsKeyBean> fakeCameraBean) {
+        if (fakeCameraBean == null) {
+            Log.w(TAG, "FakeCameraBean is null");
+            return null;
         }
+
         Map<String, Map<String, Object>> cc = new LinkedHashMap<>();
-        Iterator<CameraCharacteristicsKeyBean> it = cameraBean.fakecamera.listIterator();
+        Iterator<CameraCharacteristicsKeyBean> it = fakeCameraBean.listIterator();
         while (it.hasNext()) {
             CameraCharacteristicsKeyBean bean = it.next();
             String cameraId = bean.cameraId;
@@ -596,30 +599,22 @@ public class FakeCameraUtils {
 //                    mDepthStallDurationsList.add(new StreamConfigurationDuration(format, width, height,
 //                            stall));
                     try {
-                        mDepthConfigurationsList.add(Reflection.createInstance(StreamConfiguration,
-                                new Class[]{int.class, int.class, int.class, boolean.class},
-                                fmt, width, height, false
-                        ));
+                        mDepthConfigurationsList.add(Reflect.on(StreamConfiguration).create(
+                                fmt, width, height, false).get());
                     } catch (Exception e) {
 //                        e.printStackTrace();
                         Log.e(TAG, "Error: " + jo, e);
                     }
                     try {
-                        mDepthMinFrameDurationsList.add(Reflection.createInstance(
-                                StreamConfigurationDuration,
-                                new Class[]{int.class, int.class, int.class, long.class},
-                                fmt, width, height, minDuration
-                        ));
+                        mDepthMinFrameDurationsList.add(Reflect.on(StreamConfigurationDuration)
+                                .create(fmt, width, height, minDuration).get());
                     } catch (Exception e) {
 //                        e.printStackTrace();
                         Log.e(TAG, "Error: " + jo, e);
                     }
                     try {
-                        mDepthStallDurationsList.add(Reflection.createInstance(
-                                StreamConfigurationDuration,
-                                new Class[]{int.class, int.class, int.class, long.class},
-                                fmt, width, height, stall
-                        ));
+                        mDepthStallDurationsList.add(Reflect.on(StreamConfigurationDuration)
+                                .create(fmt, width, height, stall).get());
                     } catch (Exception e) {
 //                        e.printStackTrace();
                         Log.e(TAG, "Error: " + jo, e);
@@ -631,28 +626,22 @@ public class FakeCameraUtils {
 //                    mStallDurationsList.add(new StreamConfigurationDuration(format, width, height,
 //                            stall));
                     try {
-                        mConfigurationsList.add(Reflection.createInstance(StreamConfiguration,
-                                new Class[]{int.class, int.class, int.class, boolean.class},
-                                fmt, width, height, false
-                        ));
+                        mConfigurationsList.add(Reflect.on(StreamConfiguration).create(
+                                fmt, width, height, false).get());
                     } catch (Exception e) {
 //                        e.printStackTrace();
                         Log.e(TAG, "Error: " + jo, e);
                     }
                     try {
-                        mMinFrameDurationsList.add(Reflection.createInstance(StreamConfigurationDuration,
-                                new Class[]{int.class, int.class, int.class, long.class},
-                                fmt, width, height, minDuration
-                        ));
+                        mMinFrameDurationsList.add(Reflect.on(StreamConfigurationDuration)
+                                .create(fmt, width, height, minDuration).get());
                     } catch (Exception e) {
 //                        e.printStackTrace();
                         Log.e(TAG, "Error: " + jo, e);
                     }
                     try {
-                        mStallDurationsList.add(Reflection.createInstance(StreamConfigurationDuration,
-                                new Class[]{int.class, int.class, int.class, long.class},
-                                fmt, width, height, stall
-                        ));
+                        mStallDurationsList.add(Reflect.on(StreamConfigurationDuration)
+                                .create(fmt, width, height, stall).get());
                     } catch (Exception e) {
 //                        e.printStackTrace();
                         Log.e(TAG, "Error: " + jo, e);
@@ -676,10 +665,8 @@ public class FakeCameraUtils {
                 int height = jo.getInt("h");
 //                mConfigurationsList.add(new StreamConfiguration(format, width, height, true));
                 try {
-                    mConfigurationsList.add(Reflection.createInstance(StreamConfiguration,
-                            new Class[]{int.class, int.class, int.class, boolean.class},
-                            format, width, height, true
-                    ));
+                    mConfigurationsList.add(Reflect.on(StreamConfiguration).create(
+                            format, width, height, true).get());
                 } catch (Exception e) {
 //                    e.printStackTrace();
                     Log.e(TAG, "Error: " + jo, e);
@@ -717,11 +704,8 @@ public class FakeCameraUtils {
 //                mHighSpeedVideoConfigurationsList.add(new HighSpeedVideoConfiguration(width, height,
 //                        minFps, maxFps, batchSizeMax));
                 try {
-                    mHighSpeedVideoConfigurationsList.add(Reflection.createInstance(
-                            HighSpeedVideoConfiguration,
-                            new Class[]{int.class, int.class, int.class, int.class, int.class},
-                            width, height, minFps, maxFps, batchSizeMax
-                    ));
+                    mHighSpeedVideoConfigurationsList.add(Reflect.on(HighSpeedVideoConfiguration)
+                            .create(width, height, minFps, maxFps, batchSizeMax).get());
                 } catch (Exception e) {
 //                    e.printStackTrace();
                     Log.e(TAG, "Error: " + jo, e);
@@ -733,73 +717,27 @@ public class FakeCameraUtils {
 
         Class streamConfigurationCls = null;
         try {
-            streamConfigurationCls = Reflection.forName(StreamConfiguration);
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        Class streamConfigurationArrCls = null;
-        try {
-            streamConfigurationArrCls = Reflection.forName("[L" + StreamConfiguration + ";");
-        } catch (ClassNotFoundException e) {
+            streamConfigurationCls = Reflect.on(StreamConfiguration).getCls();
+        } catch (Reflect.ReflectException e) {
             e.printStackTrace();
         }
 
         Class streamConfigurationDurationCls = null;
         try {
-            streamConfigurationDurationCls = Reflection.forName(StreamConfigurationDuration);
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        Class streamConfigurationDurationArrCls = null;
-        try {
-            streamConfigurationDurationArrCls = Reflection.forName("[L"
-                    + StreamConfigurationDuration + ";");
-        } catch (ClassNotFoundException e) {
+            streamConfigurationDurationCls = Reflect.on(StreamConfigurationDuration).getCls();
+        } catch (Reflect.ReflectException e) {
             e.printStackTrace();
         }
 
         Class highSpeedVideoConfigurationCls = null;
         try {
-            highSpeedVideoConfigurationCls = Reflection.forName(HighSpeedVideoConfiguration);
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        Class highSpeedVideoConfigurationArrCls = null;
-        try {
-            highSpeedVideoConfigurationArrCls = Reflection.forName("[L"
-                    + HighSpeedVideoConfiguration + ";");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        Class reprocessFormatsMapCls = null;
-        try {
-            reprocessFormatsMapCls = Reflection.forName(ReprocessFormatsMap);
-        } catch (ClassNotFoundException e) {
+            highSpeedVideoConfigurationCls = Reflect.on(HighSpeedVideoConfiguration).getCls();
+        } catch (Reflect.ReflectException e) {
             e.printStackTrace();
         }
 
         try {
-            Object streamConfigurationMapObj = Reflection.createInstance(StreamConfigurationMap,
-                    new Class[]{streamConfigurationArrCls,
-                            streamConfigurationDurationArrCls,
-                            streamConfigurationDurationArrCls,
-                            streamConfigurationArrCls,
-                            streamConfigurationDurationArrCls,
-                            streamConfigurationDurationArrCls,
-                            streamConfigurationArrCls,
-                            streamConfigurationDurationArrCls,
-                            streamConfigurationDurationArrCls,
-                            streamConfigurationArrCls,
-                            streamConfigurationDurationArrCls,
-                            streamConfigurationDurationArrCls,
-                            highSpeedVideoConfigurationArrCls,
-                            reprocessFormatsMapCls,
-                            boolean.class,
-                            boolean.class},
+            Object streamConfigurationMapObj = Reflect.on(StreamConfigurationMap).create(
                     mConfigurationsList.toArray((Object[]) Array.newInstance(
                             streamConfigurationCls, 0)),
                     mMinFrameDurationsList.toArray((Object[]) Array.newInstance(
@@ -820,11 +758,11 @@ public class FakeCameraUtils {
                     null,
                     mHighSpeedVideoConfigurationsList.toArray((Object[]) Array.newInstance(
                             highSpeedVideoConfigurationCls, 0)),
-                    Reflection.createInstance(ReprocessFormatsMap, new Class[]{int[].class},
-                            toPrimitiveInts(mEntryList.toArray(new Integer[0]))),
+                    Reflect.on(ReprocessFormatsMap).create(
+                            toPrimitiveInts(mEntryList.toArray(new Integer[0]))).get(),
                     true,
                     true
-            );
+            ).get();
             Log.d(TAG, "++++++++++++++++++++++++++++++++++++++++++ StreamConfigurationMapObj:\n"
                     + streamConfigurationMapObj, null);
             return streamConfigurationMapObj;
