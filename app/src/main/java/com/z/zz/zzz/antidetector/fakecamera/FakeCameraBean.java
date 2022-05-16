@@ -4,12 +4,12 @@ import java.util.List;
 
 public class FakeCameraBean {
 
-    public List<CameraCharacteristicsKeyBean> camera;
+    public List<CameraCharacteristicsKeyBean> fakecamera;
 
     @Override
     public String toString() {
         return "FakeCameraBean{" +
-                "camera=" + camera +
+                "fakecamera=" + fakecamera +
                 '}';
     }
 }

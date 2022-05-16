@@ -41,7 +41,7 @@ public class FakeCameraUtils {
             throw new IllegalStateException("Error to create FakeCameraBean");
         }
         Map<String, Map<String, Object>> cc = new LinkedHashMap<>();
-        Iterator<CameraCharacteristicsKeyBean> it = cameraBean.camera.listIterator();
+        Iterator<CameraCharacteristicsKeyBean> it = cameraBean.fakecamera.listIterator();
         while (it.hasNext()) {
             CameraCharacteristicsKeyBean bean = it.next();
             String cameraId = bean.cameraId;
