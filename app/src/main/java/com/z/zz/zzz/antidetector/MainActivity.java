@@ -5,8 +5,8 @@ import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.gson.Gson;
-import com.z.zz.zzz.antidetector.camera.CameraBean;
-import com.z.zz.zzz.antidetector.camera.FakeCameraUtils;
+import com.z.zz.zzz.antidetector.fakecamera.CameraBean;
+import com.z.zz.zzz.antidetector.fakecamera.FakeCameraUtils;
 
 import java.io.DataOutputStream;
 import java.io.EOFException;

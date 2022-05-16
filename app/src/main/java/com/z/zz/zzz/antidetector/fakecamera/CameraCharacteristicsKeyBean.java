@@ -1,4 +1,4 @@
-package com.z.zz.zzz.antidetector.camera;
+package com.z.zz.zzz.antidetector.fakecamera;
 
 import com.google.gson.annotations.SerializedName;
 

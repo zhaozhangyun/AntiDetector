@@ -1,15 +1,15 @@
-package com.z.zz.zzz.antidetector.camera;
+package com.z.zz.zzz.antidetector.fakecamera;
 
 import android.util.Size;
 
-public class StreamConfiguration {
+public class StreamConfigurationDuration {
 
-    public StreamConfiguration(
-            final int format, final int width, final int height, final boolean input) {
+    public StreamConfigurationDuration(
+            final int format, final int width, final int height, final long durationNs) {
         mFormat = format;
         mWidth = width;
         mHeight = height;
-        mInput = input;
+        mDurationNs = durationNs;
     }
 
     public final int getFormat() {
@@ -28,12 +28,8 @@ public class StreamConfiguration {
         return new Size(mWidth, mHeight);
     }
 
-    public boolean isInput() {
-        return mInput;
-    }
-
-    public boolean isOutput() {
-        return !mInput;
+    public long getDuration() {
+        return mDurationNs;
     }
 
     @Override
@@ -44,28 +40,28 @@ public class StreamConfiguration {
         if (this == obj) {
             return true;
         }
-        if (obj instanceof StreamConfiguration) {
-            final StreamConfiguration other = (StreamConfiguration) obj;
+        if (obj instanceof StreamConfigurationDuration) {
+            final StreamConfigurationDuration other = (StreamConfigurationDuration) obj;
             return mFormat == other.mFormat &&
                     mWidth == other.mWidth &&
                     mHeight == other.mHeight &&
-                    mInput == other.mInput;
+                    mDurationNs == other.mDurationNs;
         }
         return false;
     }
 
     @Override
     public String toString() {
-        return "StreamConfiguration{" +
+        return "StreamConfigurationDuration{" +
                 "mFormat=" + StreamConfMap.formatToString(mFormat) + "(" + mFormat + ")" +
                 ", mWidth=" + mWidth +
                 ", mHeight=" + mHeight +
-                ", mInput=" + mInput +
+                ", mDurationNs=" + mDurationNs +
                 '}';
     }
 
-    protected int mFormat;
-    protected int mWidth;
-    protected int mHeight;
-    protected boolean mInput;
+    private final int mFormat;
+    private final int mWidth;
+    private final int mHeight;
+    private final long mDurationNs;
 }
