@@ -74,7 +74,8 @@ public class MainActivity extends AppCompatActivity {
             String content = new String(buffer);
             FakeCameraBean cameraBean = new Gson().fromJson(content, FakeCameraBean.class);
             FakeCameraUtils.fakeCameraCharacteristics(cameraBean);
-//            zizzy.zhao.bridgex.l.L.d(FakeCameraUtils.fakeCameraCharacteristics(cameraBean));
+            zizzy.zhao.bridgex.l.L.d("fakeCameraIdList: " +
+                    Arrays.toString(FakeCameraUtils.getFakeCameraIdList()));
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

@@ -35,6 +35,7 @@ public class FakeCameraUtils {
     private static final String ReprocessFormatsMap =
             "android.hardware.camera2.params.ReprocessFormatsMap";
     private static Pattern p1 = Pattern.compile("\\[(.*?)\\]");
+    private static List<String> fakeCameraIdList = new LinkedList<>();
 
     public static Map<String, Map<String, Object>> fakeCameraCharacteristics(FakeCameraBean cameraBean) {
         if (cameraBean == null) {
@@ -45,6 +46,7 @@ public class FakeCameraUtils {
         while (it.hasNext()) {
             CameraCharacteristicsKeyBean bean = it.next();
             String cameraId = bean.cameraId;
+            fakeCameraIdList.add(cameraId);
             Map<String, Object> params = new LinkedHashMap<>();
             params.put("cameraId", cameraId);
             params.put("android.colorCorrection.availableAberrationModes", strToIntArr(
@@ -184,6 +186,14 @@ public class FakeCameraUtils {
             cc.put(cameraId, params);
         }
         return cc;
+    }
+
+    public static String[] getFakeCameraIdList() {
+        if (fakeCameraIdList == null) {
+            return new String[0];
+        }
+
+        return fakeCameraIdList.toArray(new String[0]);
     }
 
     private static String trimStr(String arr) {
