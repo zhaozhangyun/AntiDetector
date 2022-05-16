@@ -36,9 +36,9 @@ public class FakeCameraUtils {
             "android.hardware.camera2.params.ReprocessFormatsMap";
     private static Pattern p1 = Pattern.compile("\\[(.*?)\\]");
 
-    public static Map<String, Map<String, Object>> fakeCameraCharacteristics(CameraBean cameraBean) {
+    public static Map<String, Map<String, Object>> fakeCameraCharacteristics(FakeCameraBean cameraBean) {
         if (cameraBean == null) {
-            throw new IllegalStateException("Error to create CameraBean");
+            throw new IllegalStateException("Error to create FakeCameraBean");
         }
         Map<String, Map<String, Object>> cc = new LinkedHashMap<>();
         Iterator<CameraCharacteristicsKeyBean> it = cameraBean.camera.listIterator();

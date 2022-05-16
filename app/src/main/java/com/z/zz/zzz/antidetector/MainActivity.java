@@ -5,7 +5,7 @@ import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.gson.Gson;
-import com.z.zz.zzz.antidetector.fakecamera.CameraBean;
+import com.z.zz.zzz.antidetector.fakecamera.FakeCameraBean;
 import com.z.zz.zzz.antidetector.fakecamera.FakeCameraUtils;
 
 import java.io.DataOutputStream;
@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
             byte[] buffer = new byte[size];
             is.read(buffer);
             String content = new String(buffer);
-            CameraBean cameraBean = new Gson().fromJson(content, CameraBean.class);
+            FakeCameraBean cameraBean = new Gson().fromJson(content, FakeCameraBean.class);
             FakeCameraUtils.fakeCameraCharacteristics(cameraBean);
 //            zizzy.zhao.bridgex.l.L.d(FakeCameraUtils.fakeCameraCharacteristics(cameraBean));
         } catch (Exception e) {

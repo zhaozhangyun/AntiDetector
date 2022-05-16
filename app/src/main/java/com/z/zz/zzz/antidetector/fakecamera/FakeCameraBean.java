@@ -2,13 +2,13 @@ package com.z.zz.zzz.antidetector.fakecamera;
 
 import java.util.List;
 
-public class CameraBean {
+public class FakeCameraBean {
 
     public List<CameraCharacteristicsKeyBean> camera;
 
     @Override
     public String toString() {
-        return "CameraBean{" +
+        return "FakeCameraBean{" +
                 "camera=" + camera +
                 '}';
     }
