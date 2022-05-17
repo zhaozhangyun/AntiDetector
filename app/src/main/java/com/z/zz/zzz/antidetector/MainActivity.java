@@ -75,20 +75,20 @@ public class MainActivity extends AppCompatActivity {
             String content = new String(buffer);
             FakeCameraBean fakeCameraBean = new Gson().fromJson(content, FakeCameraBean.class);
 
-            FakeCameraUtils.saveFakeCameraObject(getFilesDir() + "/fakecamera.obj",
+            FakeCameraUtils.get().saveFakeCameraObject(getFilesDir() + "/fakecamera.obj",
                     fakeCameraBean);
-            FakeCameraBean fakeCameraBeanObj = FakeCameraUtils.loadFakeCameraObject(
+            FakeCameraBean fakeCameraBeanObj = FakeCameraUtils.get().loadFakeCameraObject(
                     getFilesDir() + "/fakecamera.obj");
 
-            FakeCameraUtils.fakeCameraCharacteristics(fakeCameraBeanObj.cameraCharacteristicsBean);
+            FakeCameraUtils.get().fakeCameraCharacteristics(fakeCameraBeanObj.cameraCharacteristicsBean);
             zizzy.zhao.bridgex.l.L.d("fakeCameraIdList: " + Arrays.toString(
-                    FakeCameraUtils.getFakeCameraIdList()));
+                    FakeCameraUtils.get().getFakeCameraIdList()));
 
             zizzy.zhao.bridgex.l.L.d("\r\n===================================================\r\n");
 
-            FakeCameraUtils.fakeCameraCharacteristics(content);
+            FakeCameraUtils.get().fakeCameraCharacteristics(content);
             zizzy.zhao.bridgex.l.L.d("fakeCameraIdList: " + Arrays.toString(
-                    FakeCameraUtils.getFakeCameraIdList()));
+                    FakeCameraUtils.get().getFakeCameraIdList()));
         } catch (Throwable t) {
             t.printStackTrace();
         } finally {

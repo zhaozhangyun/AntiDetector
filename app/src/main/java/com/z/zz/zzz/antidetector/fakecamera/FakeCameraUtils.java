@@ -40,11 +40,21 @@ public class FakeCameraUtils {
             "android.hardware.camera2.params.HighSpeedVideoConfiguration";
     private static final String ReprocessFormatsMap =
             "android.hardware.camera2.params.ReprocessFormatsMap";
-    private static Pattern p1 = Pattern.compile("\\[(.*?)\\]");
-    private static List<String> fakeCameraIdList = new LinkedList<>();
+    private Pattern p1 = Pattern.compile("\\[(.*?)\\]");
+    private List<String> fakeCameraIdList = new LinkedList<>();
 
-    public static Map<String, Map<String, Object>> fakeCameraCharacteristics(String jsonStr)
-            throws JSONException {
+    private static class Holder {
+        private static volatile FakeCameraUtils INSTANCE = new FakeCameraUtils();
+    }
+
+    private FakeCameraUtils() {
+    }
+
+    public static FakeCameraUtils get() {
+        return Holder.INSTANCE;
+    }
+
+    public Map<String, Map<String, Object>> fakeCameraCharacteristics(String jsonStr) throws JSONException {
         List<CameraCharacteristicsBean> cameraCharacteristicsBean = new LinkedList<>();
 
         JSONArray ja = new JSONObject(jsonStr).getJSONArray("cameraCharacteristicsBean");
@@ -70,7 +80,7 @@ public class FakeCameraUtils {
         return fakeCameraCharacteristics(cameraCharacteristicsBean);
     }
 
-    public static Map<String, Map<String, Object>> fakeCameraCharacteristics(
+    public Map<String, Map<String, Object>> fakeCameraCharacteristics(
             List<CameraCharacteristicsBean> cameraCharacteristicsBean) {
         if (cameraCharacteristicsBean == null) {
             Log.w(TAG, "cameraCharacteristicsBean is null");
@@ -226,7 +236,7 @@ public class FakeCameraUtils {
         return cc;
     }
 
-    public static String[] getFakeCameraIdList() {
+    public String[] getFakeCameraIdList() {
         if (fakeCameraIdList == null) {
             return new String[0];
         }
@@ -234,7 +244,7 @@ public class FakeCameraUtils {
         return fakeCameraIdList.toArray(new String[0]);
     }
 
-    public static void saveFakeCameraObject(String name, Object obj) throws Exception {
+    public void saveFakeCameraObject(String name, Object obj) throws Exception {
         Log.i(TAG, "save fakecamera object to " + name);
         ObjectOutputStream oos = null;
         try {
@@ -252,7 +262,7 @@ public class FakeCameraUtils {
         }
     }
 
-    public static <T> T loadFakeCameraObject(String name) throws Exception {
+    public <T> T loadFakeCameraObject(String name) throws Exception {
         Log.i(TAG, "load fakecamera object from " + name);
         ObjectInputStream ois = null;
         try {
@@ -269,7 +279,7 @@ public class FakeCameraUtils {
         }
     }
 
-    private static String trimStr(String arr) {
+    private String trimStr(String arr) {
         if (arr == null || arr.length() == 0) {
             return null;
         }
@@ -279,7 +289,7 @@ public class FakeCameraUtils {
         return arr;
     }
 
-    private static int[] strToIntArr(String arr) {
+    private int[] strToIntArr(String arr) {
         String newStr = trimStr(arr);
         if (newStr == null) {
             return null;
@@ -295,7 +305,7 @@ public class FakeCameraUtils {
         return intArr;
     }
 
-    private static float[] strToFloatArr(String arr) {
+    private float[] strToFloatArr(String arr) {
         String newStr = trimStr(arr);
         if (newStr == null) {
             return null;
@@ -311,7 +321,7 @@ public class FakeCameraUtils {
         return floatArr;
     }
 
-    private static boolean[] strToBooleanArr(String arr) {
+    private boolean[] strToBooleanArr(String arr) {
         String newStr = trimStr(arr);
         if (newStr == null) {
             return null;
@@ -327,7 +337,7 @@ public class FakeCameraUtils {
         return booleanArr;
     }
 
-    private static Range strToRangeInt(String arr) {
+    private Range strToRangeInt(String arr) {
         String newStr = trimStr(arr);
         if (newStr == null) {
             return null;
@@ -340,7 +350,7 @@ public class FakeCameraUtils {
         return r;
     }
 
-    private static Range strToRangeLong(String arr) {
+    private Range strToRangeLong(String arr) {
         String newStr = trimStr(arr);
         if (newStr == null) {
             return null;
@@ -353,7 +363,7 @@ public class FakeCameraUtils {
         return r;
     }
 
-    private static Range[] strToRangeIntArr(String arr) {
+    private Range[] strToRangeIntArr(String arr) {
         String newStr = trimStr(arr);
         if (newStr == null) {
             return null;
@@ -381,7 +391,7 @@ public class FakeCameraUtils {
         return ranges;
     }
 
-    private static Range[] strToRangeLongArr(String arr) {
+    private Range[] strToRangeLongArr(String arr) {
         String newStr = trimStr(arr);
         if (newStr == null) {
             return null;
@@ -409,7 +419,7 @@ public class FakeCameraUtils {
         return ranges;
     }
 
-    private static Rational strToRational(String arr) {
+    private Rational strToRational(String arr) {
         if (arr == null || arr.length() == 0) {
             return null;
         }
@@ -421,7 +431,7 @@ public class FakeCameraUtils {
         return r;
     }
 
-    private static Size[] strToSizeArr(String arr) {
+    private Size[] strToSizeArr(String arr) {
         String newStr = trimStr(arr);
         if (newStr == null) {
             return null;
@@ -438,7 +448,7 @@ public class FakeCameraUtils {
         return sizeArr;
     }
 
-    private static Size strToSize(String arr) {
+    private Size strToSize(String arr) {
         String newStr = trimStr(arr);
         if (newStr == null) {
             return null;
@@ -451,7 +461,7 @@ public class FakeCameraUtils {
         return size;
     }
 
-    private static SizeF strToSizeF(String arr) {
+    private SizeF strToSizeF(String arr) {
         String newStr = trimStr(arr);
         if (newStr == null) {
             return null;
@@ -464,7 +474,7 @@ public class FakeCameraUtils {
         return sizeF;
     }
 
-    private static Rect strToRect(String arr) {
+    private Rect strToRect(String arr) {
         if (arr == null || arr.length() == 0 || !arr.startsWith("Rect(")) {
             return null;
         }
@@ -481,7 +491,7 @@ public class FakeCameraUtils {
         return rect;
     }
 
-    private static Object strToStreamConfigurationMap(String arr) {
+    private Object strToStreamConfigurationMap(String arr) {
         if (arr == null || arr.length() == 0 || !arr.startsWith("StreamConfiguration(")) {
             return null;
         }
@@ -521,7 +531,7 @@ public class FakeCameraUtils {
         return rebuildStreamConfigurationMap(map);
     }
 
-    private static int[] strToBlackLevelPattern(String arr) {
+    private int[] strToBlackLevelPattern(String arr) {
         if (arr == null || arr.length() == 0 || !arr.startsWith("BlackLevelPattern(")) {
             return null;
         }
@@ -550,11 +560,11 @@ public class FakeCameraUtils {
         return offsets;
     }
 
-    private static int findStrIndex(String src, String findStr) {
+    private int findStrIndex(String src, String findStr) {
         return src.indexOf(findStr) + findStr.length();
     }
 
-    private static JSONArray arrToJson(String content, String name) {
+    private JSONArray arrToJson(String content, String name) {
         JSONArray ja = new JSONArray();
         try {
             Matcher m1 = p1.matcher(content);
@@ -607,7 +617,7 @@ public class FakeCameraUtils {
         return ja;
     }
 
-    private static Object rebuildStreamConfigurationMap(Map<String, JSONArray> map) {
+    private Object rebuildStreamConfigurationMap(Map<String, JSONArray> map) {
         JSONArray jOutputs = map.get("Outputs");
 //        Log.d(TAG, "Outputs size: " + jOutputs.length());
 
@@ -843,7 +853,7 @@ public class FakeCameraUtils {
         return null;
     }
 
-    private static int[] toPrimitiveInts(Integer[] ints) {
+    private int[] toPrimitiveInts(Integer[] ints) {
         int[] primitiveInts = new int[ints.length];
         for (int i = 0; i < ints.length; i++) {
             primitiveInts[i] = ints[i] == null ? 0 : ints[i];
