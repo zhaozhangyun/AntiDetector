@@ -249,7 +249,7 @@ public class FakeCameraUtils {
         Log.i(TAG, "finish to fake cameraCharacteristics");
     }
 
-    public String[] getFakeCameraIdList() {
+    public String[] getFakeCameraIds() {
         if (fakeCameraIdList == null) {
             return new String[0];
         }

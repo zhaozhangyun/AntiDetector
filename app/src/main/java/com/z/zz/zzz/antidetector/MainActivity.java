@@ -81,14 +81,14 @@ public class MainActivity extends AppCompatActivity {
                     getFilesDir() + "/fakecamera.obj");
 
             FakeCameraUtils.get().fakeCameraCharacteristics(fakeCameraBeanObj.cameraCharacteristicsBean);
-            zizzy.zhao.bridgex.l.L.d("fakeCameraIdList: " + Arrays.toString(
-                    FakeCameraUtils.get().getFakeCameraIdList()));
+            zizzy.zhao.bridgex.l.L.d("fakeCameraIds: " + Arrays.toString(
+                    FakeCameraUtils.get().getFakeCameraIds()));
 
             zizzy.zhao.bridgex.l.L.d("\r\n===================================================\r\n");
 
             FakeCameraUtils.get().fakeCameraCharacteristics(content);
-            zizzy.zhao.bridgex.l.L.d("fakeCameraIdList: " + Arrays.toString(
-                    FakeCameraUtils.get().getFakeCameraIdList()));
+            zizzy.zhao.bridgex.l.L.d("fakeCameraIds: " + Arrays.toString(
+                    FakeCameraUtils.get().getFakeCameraIds()));
 
             FakeCameraUtils.get().setCurrentCameraId("0");
             zizzy.zhao.bridgex.l.L.d("android.scaler.streamConfigurationMap: " + FakeCameraUtils.get()
