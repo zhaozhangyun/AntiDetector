@@ -45,6 +45,7 @@ public class FakeCameraUtils {
     private List<String> fakeCameraIdList = new LinkedList<>();
     private Map<String, Map<String, Object>> cameraCharacteristics = new LinkedHashMap<>();
     private String mCurrentCameraId;
+    private String cameraCharacteristicsMd5;
 
     private static class Holder {
         private static volatile FakeCameraUtils INSTANCE = new FakeCameraUtils();
@@ -57,8 +58,8 @@ public class FakeCameraUtils {
         return Holder.INSTANCE;
     }
 
-    public Map<String, Map<String, Object>> fakeCameraCharacteristics(String jsonStr) throws JSONException {
-        List<CameraCharacteristicsBean> cameraCharacteristicsBean = new LinkedList<>();
+    public void fakeCameraCharacteristics(String jsonStr) throws JSONException {
+        List<CameraCharacteristicsBean> ccBean = new LinkedList<>();
 
         JSONArray ja = new JSONObject(jsonStr).getJSONArray("cameraCharacteristicsBean");
 
@@ -77,23 +78,32 @@ public class FakeCameraUtils {
                     f.setAccessible(false);
                 }
             }
-            cameraCharacteristicsBean.add(bean);
+            ccBean.add(bean);
         }
 
-        return fakeCameraCharacteristics(cameraCharacteristicsBean);
+        fakeCameraCharacteristics(ccBean);
     }
 
-    public Map<String, Map<String, Object>> fakeCameraCharacteristics(
-            List<CameraCharacteristicsBean> cameraCharacteristicsBean) {
-        if (cameraCharacteristicsBean == null) {
+    public void fakeCameraCharacteristics(List<CameraCharacteristicsBean> ccBean) {
+        if (ccBean == null) {
             Log.w(TAG, "cameraCharacteristicsBean is null");
-            return null;
+            return;
         }
 
-        fakeCameraIdList.clear();
+        String md5 = Md5Util.getMd5(Arrays.toString(new List[]{ccBean}));
 
-        Map<String, Map<String, Object>> cc = new LinkedHashMap<>();
-        Iterator<CameraCharacteristicsBean> it = cameraCharacteristicsBean.listIterator();
+        if (cameraCharacteristicsMd5 != null && cameraCharacteristicsMd5.equals(md5)) {
+            Log.w(TAG, "same md5, so return");
+            return;
+        }
+
+        cameraCharacteristicsMd5 = md5;
+        Log.d(TAG, "cameraCharacteristicsMd5: " + cameraCharacteristicsMd5);
+
+        fakeCameraIdList.clear();
+        cameraCharacteristics.clear();
+
+        Iterator<CameraCharacteristicsBean> it = ccBean.listIterator();
         while (it.hasNext()) {
             CameraCharacteristicsBean bean = it.next();
             String cameraId = bean.cameraId;
@@ -234,10 +244,9 @@ public class FakeCameraUtils {
                     bean.android_tonemap_availableToneMapModes));
             params.put("android.tonemap.maxCurvePoints", Integer.valueOf(
                     bean.android_tonemap_maxCurvePoints));
-            cc.put(cameraId, params);
+            cameraCharacteristics.put(cameraId, params);
         }
-        cameraCharacteristics = cc;
-        return cc;
+        Log.i(TAG, "finish to fake cameraCharacteristics");
     }
 
     public String[] getFakeCameraIdList() {
