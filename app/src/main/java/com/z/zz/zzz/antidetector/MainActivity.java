@@ -5,21 +5,14 @@ import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.kmdc.mdu.KMDC;
-import com.z.zz.zzz.antidetector.fakecamera.CameraCharacteristicsKeyBean;
 import com.z.zz.zzz.antidetector.fakecamera.FakeCameraUtils;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -79,30 +72,11 @@ public class MainActivity extends AppCompatActivity {
             is.read(buffer);
             String content = new String(buffer);
 //            FakeCameraBean cameraBean = new Gson().fromJson(content, FakeCameraBean.class);
-            List<CameraCharacteristicsKeyBean> fakeCameraBean = new LinkedList<>();
-            JSONArray ja = new JSONObject(content).getJSONArray("fakeCameraBean");
-            for (int i = 0; i < ja.length(); ++i) {
-                CameraCharacteristicsKeyBean bean = new CameraCharacteristicsKeyBean();
-                JSONObject jo = ja.getJSONObject(i);
-                Field[] fields = CameraCharacteristicsKeyBean.class.getDeclaredFields();
-                for (Field f : fields) {
-                    try {
-                        f.setAccessible(true);
-                        String fieldName = f.getName();
-                        f.set(bean, jo.getString(fieldName.replaceAll("_", ".")));
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    } finally {
-                        f.setAccessible(false);
-                    }
-                }
-                fakeCameraBean.add(bean);
-            }
-            FakeCameraUtils.fakeCameraCharacteristics(fakeCameraBean);
+            FakeCameraUtils.fakeCameraCharacteristics(content);
             zizzy.zhao.bridgex.l.L.d("fakeCameraIdList: " +
                     Arrays.toString(FakeCameraUtils.getFakeCameraIdList()));
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Throwable t) {
+            t.printStackTrace();
         } finally {
             if (is != null) {
                 try {

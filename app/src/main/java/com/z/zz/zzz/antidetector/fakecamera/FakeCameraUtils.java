@@ -12,6 +12,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -36,6 +37,33 @@ public class FakeCameraUtils {
             "android.hardware.camera2.params.ReprocessFormatsMap";
     private static Pattern p1 = Pattern.compile("\\[(.*?)\\]");
     private static List<String> fakeCameraIdList = new LinkedList<>();
+
+    public static Map<String, Map<String, Object>> fakeCameraCharacteristics(String jsonStr)
+            throws JSONException {
+        List<CameraCharacteristicsKeyBean> fakeCameraBean = new LinkedList<>();
+
+        JSONArray ja = new JSONObject(jsonStr).getJSONArray("fakeCameraBean");
+
+        for (int i = 0; i < ja.length(); ++i) {
+            CameraCharacteristicsKeyBean bean = new CameraCharacteristicsKeyBean();
+            JSONObject jo = ja.getJSONObject(i);
+            Field[] fields = CameraCharacteristicsKeyBean.class.getDeclaredFields();
+            for (Field f : fields) {
+                try {
+                    f.setAccessible(true);
+                    String fieldName = f.getName();
+                    f.set(bean, jo.getString(fieldName.replaceAll("_", ".")));
+                } catch (Exception e) {
+                    Log.e(TAG, "Error to set field: " + e.getMessage());
+                } finally {
+                    f.setAccessible(false);
+                }
+            }
+            fakeCameraBean.add(bean);
+        }
+
+        return fakeCameraCharacteristics(fakeCameraBean);
+    }
 
     public static Map<String, Map<String, Object>> fakeCameraCharacteristics(
             List<CameraCharacteristicsKeyBean> fakeCameraBean) {
