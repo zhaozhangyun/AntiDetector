@@ -45,14 +45,14 @@ public class FakeCameraUtils {
 
     public static Map<String, Map<String, Object>> fakeCameraCharacteristics(String jsonStr)
             throws JSONException {
-        List<CameraCharacteristicsKeyBean> cameraCharacteristicsKeyBean = new LinkedList<>();
+        List<CameraCharacteristicsBean> cameraCharacteristicsKeyBean = new LinkedList<>();
 
         JSONArray ja = new JSONObject(jsonStr).getJSONArray("cameraCharacteristicsBean");
 
         for (int i = 0; i < ja.length(); ++i) {
-            CameraCharacteristicsKeyBean bean = new CameraCharacteristicsKeyBean();
+            CameraCharacteristicsBean bean = new CameraCharacteristicsBean();
             JSONObject jo = ja.getJSONObject(i);
-            Field[] fields = CameraCharacteristicsKeyBean.class.getDeclaredFields();
+            Field[] fields = CameraCharacteristicsBean.class.getDeclaredFields();
             for (Field f : fields) {
                 try {
                     f.setAccessible(true);
@@ -71,7 +71,7 @@ public class FakeCameraUtils {
     }
 
     public static Map<String, Map<String, Object>> fakeCameraCharacteristics(
-            List<CameraCharacteristicsKeyBean> cameraCharacteristicsKeyBean) {
+            List<CameraCharacteristicsBean> cameraCharacteristicsKeyBean) {
         if (cameraCharacteristicsKeyBean == null) {
             Log.w(TAG, "cameraCharacteristicsKeyBean is null");
             return null;
@@ -80,9 +80,9 @@ public class FakeCameraUtils {
         fakeCameraIdList.clear();
 
         Map<String, Map<String, Object>> cc = new LinkedHashMap<>();
-        Iterator<CameraCharacteristicsKeyBean> it = cameraCharacteristicsKeyBean.listIterator();
+        Iterator<CameraCharacteristicsBean> it = cameraCharacteristicsKeyBean.listIterator();
         while (it.hasNext()) {
-            CameraCharacteristicsKeyBean bean = it.next();
+            CameraCharacteristicsBean bean = it.next();
             String cameraId = bean.cameraId;
             fakeCameraIdList.add(cameraId);
             Map<String, Object> params = new LinkedHashMap<>();

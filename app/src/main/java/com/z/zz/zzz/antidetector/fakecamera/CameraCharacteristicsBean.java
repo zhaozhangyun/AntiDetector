@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName;
 
 import java.io.Serializable;
 
-public class CameraCharacteristicsKeyBean implements Serializable {
+public class CameraCharacteristicsBean implements Serializable {
     public String cameraId;
     @SerializedName("android.colorCorrection.availableAberrationModes")
     public String android_colorCorrection_availableAberrationModes;
@@ -145,7 +145,7 @@ public class CameraCharacteristicsKeyBean implements Serializable {
 
     @Override
     public String toString() {
-        return "CameraCharacteristicsKeyBean{" +
+        return "CameraCharacteristicsBean{" +
                 "cameraId='" + cameraId + '\'' +
                 ", android_colorCorrection_availableAberrationModes='" + android_colorCorrection_availableAberrationModes + '\'' +
                 ", android_control_aeAvailableAntibandingModes='" + android_control_aeAvailableAntibandingModes + '\'' +

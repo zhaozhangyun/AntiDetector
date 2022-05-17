@@ -5,7 +5,7 @@ import java.util.List;
 
 public class FakeCameraBean implements Serializable {
 
-    public List<CameraCharacteristicsKeyBean> cameraCharacteristicsBean;
+    public List<CameraCharacteristicsBean> cameraCharacteristicsBean;
 
     @Override
     public String toString() {
