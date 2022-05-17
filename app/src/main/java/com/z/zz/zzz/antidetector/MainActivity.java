@@ -89,6 +89,10 @@ public class MainActivity extends AppCompatActivity {
             FakeCameraUtils.get().fakeCameraCharacteristics(content);
             zizzy.zhao.bridgex.l.L.d("fakeCameraIdList: " + Arrays.toString(
                     FakeCameraUtils.get().getFakeCameraIdList()));
+
+            FakeCameraUtils.get().setCurrentCameraId("0");
+            zizzy.zhao.bridgex.l.L.d("android.scaler.streamConfigurationMap: " + FakeCameraUtils.get()
+                    .getProperties("android.scaler.streamConfigurationMap"));
         } catch (Throwable t) {
             t.printStackTrace();
         } finally {
@@ -100,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        KMDC.doFetch(this);
+//        KMDC.doFetch(this);
 
 //        Log.d("main", "TEST1: " + Build.HARDWARE);  // unknown
 //        Log.d("main", "TEST2: " + doTest2());       // qcom

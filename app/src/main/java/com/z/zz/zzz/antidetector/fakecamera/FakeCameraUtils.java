@@ -1,6 +1,7 @@
 package com.z.zz.zzz.antidetector.fakecamera;
 
 import android.graphics.Rect;
+import android.hardware.camera2.CameraCharacteristics;
 import android.util.Log;
 import android.util.Range;
 import android.util.Rational;
@@ -42,6 +43,8 @@ public class FakeCameraUtils {
             "android.hardware.camera2.params.ReprocessFormatsMap";
     private Pattern p1 = Pattern.compile("\\[(.*?)\\]");
     private List<String> fakeCameraIdList = new LinkedList<>();
+    private Map<String, Map<String, Object>> cameraCharacteristics = new LinkedHashMap<>();
+    private String mCurrentCameraId;
 
     private static class Holder {
         private static volatile FakeCameraUtils INSTANCE = new FakeCameraUtils();
@@ -233,6 +236,7 @@ public class FakeCameraUtils {
                     bean.android_tonemap_maxCurvePoints));
             cc.put(cameraId, params);
         }
+        cameraCharacteristics = cc;
         return cc;
     }
 
@@ -242,6 +246,23 @@ public class FakeCameraUtils {
         }
 
         return fakeCameraIdList.toArray(new String[0]);
+    }
+
+    public void setCurrentCameraId(String cameraId) {
+        mCurrentCameraId = cameraId;
+    }
+
+    public String getCurrentCameraId() {
+        return mCurrentCameraId;
+    }
+
+    public <T> T getProperties(String keyName) {
+        if (cameraCharacteristics == null || mCurrentCameraId == null) {
+            return null;
+        }
+
+        Map<String, Object> ccKey = cameraCharacteristics.get(mCurrentCameraId);
+        return (T) ccKey.get(keyName);
     }
 
     public void saveFakeCameraObject(String name, Object obj) throws Exception {
