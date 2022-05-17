@@ -5,12 +5,12 @@ import java.util.List;
 
 public class FakeCameraBean implements Serializable {
 
-    public List<CameraCharacteristicsKeyBean> fakeCameraBean;
+    public List<CameraCharacteristicsKeyBean> cameraCharacteristicsBean;
 
     @Override
     public String toString() {
         return "FakeCameraBean{" +
-                "fakeCameraBean=" + fakeCameraBean +
+                "cameraCharacteristicsBean=" + cameraCharacteristicsBean +
                 '}';
     }
 }

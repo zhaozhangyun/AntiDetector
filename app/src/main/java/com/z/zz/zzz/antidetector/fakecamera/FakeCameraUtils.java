@@ -40,9 +40,9 @@ public class FakeCameraUtils {
 
     public static Map<String, Map<String, Object>> fakeCameraCharacteristics(String jsonStr)
             throws JSONException {
-        List<CameraCharacteristicsKeyBean> fakeCameraBean = new LinkedList<>();
+        List<CameraCharacteristicsKeyBean> cameraCharacteristicsKeyBean = new LinkedList<>();
 
-        JSONArray ja = new JSONObject(jsonStr).getJSONArray("fakeCameraBean");
+        JSONArray ja = new JSONObject(jsonStr).getJSONArray("cameraCharacteristicsBean");
 
         for (int i = 0; i < ja.length(); ++i) {
             CameraCharacteristicsKeyBean bean = new CameraCharacteristicsKeyBean();
@@ -59,21 +59,21 @@ public class FakeCameraUtils {
                     f.setAccessible(false);
                 }
             }
-            fakeCameraBean.add(bean);
+            cameraCharacteristicsKeyBean.add(bean);
         }
 
-        return fakeCameraCharacteristics(fakeCameraBean);
+        return fakeCameraCharacteristics(cameraCharacteristicsKeyBean);
     }
 
     public static Map<String, Map<String, Object>> fakeCameraCharacteristics(
-            List<CameraCharacteristicsKeyBean> fakeCameraBean) {
-        if (fakeCameraBean == null) {
-            Log.w(TAG, "FakeCameraBean is null");
+            List<CameraCharacteristicsKeyBean> cameraCharacteristicsKeyBean) {
+        if (cameraCharacteristicsKeyBean == null) {
+            Log.w(TAG, "cameraCharacteristicsKeyBean is null");
             return null;
         }
 
         Map<String, Map<String, Object>> cc = new LinkedHashMap<>();
-        Iterator<CameraCharacteristicsKeyBean> it = fakeCameraBean.listIterator();
+        Iterator<CameraCharacteristicsKeyBean> it = cameraCharacteristicsKeyBean.listIterator();
         while (it.hasNext()) {
             CameraCharacteristicsKeyBean bean = it.next();
             String cameraId = bean.cameraId;

@@ -89,7 +89,13 @@ public class MainActivity extends AppCompatActivity {
             FakeCameraBean fakeCameraBean1 = (FakeCameraBean) ois.readObject();
             ois.close();
 
-            FakeCameraUtils.fakeCameraCharacteristics(fakeCameraBean1.fakeCameraBean);
+            FakeCameraUtils.fakeCameraCharacteristics(fakeCameraBean1.cameraCharacteristicsBean);
+            zizzy.zhao.bridgex.l.L.d("fakeCameraIdList: " + Arrays.toString(
+                    FakeCameraUtils.getFakeCameraIdList()));
+
+            zizzy.zhao.bridgex.l.L.d("\r\n===================================================\r\n");
+
+            FakeCameraUtils.fakeCameraCharacteristics(content);
             zizzy.zhao.bridgex.l.L.d("fakeCameraIdList: " + Arrays.toString(
                     FakeCameraUtils.getFakeCameraIdList()));
         } catch (Throwable t) {
