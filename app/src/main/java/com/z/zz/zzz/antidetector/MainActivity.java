@@ -13,8 +13,6 @@ import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
@@ -77,19 +75,12 @@ public class MainActivity extends AppCompatActivity {
             String content = new String(buffer);
             FakeCameraBean fakeCameraBean = new Gson().fromJson(content, FakeCameraBean.class);
 
-            // 序列化 FakeCameraBean 对象到本地
-            ObjectOutputStream oos = new ObjectOutputStream(openFileOutput(
-                    "fakecamerabean.data", MODE_PRIVATE));
-            oos.writeObject(fakeCameraBean);
-            oos.flush();
-            oos.close();
+            FakeCameraUtils.saveFakeCameraObject(getFilesDir() + "/fakecamera.obj",
+                    fakeCameraBean);
+            FakeCameraBean fakeCameraBeanObj = FakeCameraUtils.loadFakeCameraObject(
+                    getFilesDir() + "/fakecamera.obj");
 
-            // 反序列化 FakeCameraBean 对象
-            ObjectInputStream ois = new ObjectInputStream(openFileInput("fakecamerabean.data"));
-            FakeCameraBean fakeCameraBean1 = (FakeCameraBean) ois.readObject();
-            ois.close();
-
-            FakeCameraUtils.fakeCameraCharacteristics(fakeCameraBean1.cameraCharacteristicsBean);
+            FakeCameraUtils.fakeCameraCharacteristics(fakeCameraBeanObj.cameraCharacteristicsBean);
             zizzy.zhao.bridgex.l.L.d("fakeCameraIdList: " + Arrays.toString(
                     FakeCameraUtils.getFakeCameraIdList()));
 

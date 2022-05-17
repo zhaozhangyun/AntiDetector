@@ -11,6 +11,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -71,6 +76,8 @@ public class FakeCameraUtils {
             Log.w(TAG, "cameraCharacteristicsKeyBean is null");
             return null;
         }
+
+        fakeCameraIdList.clear();
 
         Map<String, Map<String, Object>> cc = new LinkedHashMap<>();
         Iterator<CameraCharacteristicsKeyBean> it = cameraCharacteristicsKeyBean.listIterator();
@@ -225,6 +232,41 @@ public class FakeCameraUtils {
         }
 
         return fakeCameraIdList.toArray(new String[0]);
+    }
+
+    public static void saveFakeCameraObject(String name, Object obj) throws Exception {
+        Log.i(TAG, "save fakecamera object to " + name);
+        ObjectOutputStream oos = null;
+        try {
+            oos = new ObjectOutputStream(new FileOutputStream(name));
+            oos.writeObject(obj);
+            oos.flush();
+        } finally {
+            if (oos != null) {
+                try {
+                    oos.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    public static <T> T loadFakeCameraObject(String name) throws Exception {
+        Log.i(TAG, "load fakecamera object from " + name);
+        ObjectInputStream ois = null;
+        try {
+            ois = new ObjectInputStream(new FileInputStream(name));
+            return (T) ois.readObject();
+        } finally {
+            if (ois != null) {
+                try {
+                    ois.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     private static String trimStr(String arr) {
