@@ -1,8 +1,9 @@
 package com.z.zz.zzz.antidetector.fakecamera;
 
+import java.io.Serializable;
 import java.util.List;
 
-public class FakeCameraBean {
+public class FakeCameraBean implements Serializable {
 
     public List<CameraCharacteristicsKeyBean> fakeCameraBean;
 

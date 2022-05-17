@@ -2,7 +2,9 @@ package com.z.zz.zzz.antidetector.fakecamera;
 
 import com.google.gson.annotations.SerializedName;
 
-public class CameraCharacteristicsKeyBean {
+import java.io.Serializable;
+
+public class CameraCharacteristicsKeyBean implements Serializable {
     public String cameraId;
     @SerializedName("android.colorCorrection.availableAberrationModes")
     public String android_colorCorrection_availableAberrationModes;

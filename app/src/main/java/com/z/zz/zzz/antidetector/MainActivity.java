@@ -4,13 +4,17 @@ import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.gson.Gson;
 import com.kmdc.mdu.KMDC;
+import com.z.zz.zzz.antidetector.fakecamera.FakeCameraBean;
 import com.z.zz.zzz.antidetector.fakecamera.FakeCameraUtils;
 
 import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
@@ -71,8 +75,21 @@ public class MainActivity extends AppCompatActivity {
             byte[] buffer = new byte[size];
             is.read(buffer);
             String content = new String(buffer);
-//            FakeCameraBean cameraBean = new Gson().fromJson(content, FakeCameraBean.class);
-            FakeCameraUtils.fakeCameraCharacteristics(content);
+            FakeCameraBean fakeCameraBean = new Gson().fromJson(content, FakeCameraBean.class);
+
+            // 序列化 FakeCameraBean 对象到本地
+            ObjectOutputStream oos = new ObjectOutputStream(openFileOutput(
+                    "fakecamerabean.data", MODE_PRIVATE));
+            oos.writeObject(fakeCameraBean);
+            oos.flush();
+            oos.close();
+
+            // 反序列化 FakeCameraBean 对象
+            ObjectInputStream ois = new ObjectInputStream(openFileInput("fakecamerabean.data"));
+            FakeCameraBean fakeCameraBean1 = (FakeCameraBean) ois.readObject();
+            ois.close();
+
+            FakeCameraUtils.fakeCameraCharacteristics(fakeCameraBean1.fakeCameraBean);
             zizzy.zhao.bridgex.l.L.d("fakeCameraIdList: " + Arrays.toString(
                     FakeCameraUtils.getFakeCameraIdList()));
         } catch (Throwable t) {
