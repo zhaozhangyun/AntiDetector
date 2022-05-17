@@ -140,25 +140,4 @@ public final class StreamConfMap {
 
     private static final int DURATION_MIN_FRAME = 0;
     private static final int DURATION_STALL = 1;
-
-    StreamConfiguration[] mConfigurations;
-    StreamConfigurationDuration[] mMinFrameDurations;
-    StreamConfigurationDuration[] mStallDurations;
-
-    StreamConfiguration[] mDepthConfigurations;
-    StreamConfigurationDuration[] mDepthMinFrameDurations;
-    StreamConfigurationDuration[] mDepthStallDurations;
-
-    StreamConfiguration[] mDynamicDepthConfigurations;
-    StreamConfigurationDuration[] mDynamicDepthMinFrameDurations;
-    StreamConfigurationDuration[] mDynamicDepthStallDurations;
-
-    StreamConfiguration[] mHeicConfigurations;
-    StreamConfigurationDuration[] mHeicMinFrameDurations;
-    StreamConfigurationDuration[] mHeicStallDurations;
-
-    HighSpeedVideoConfiguration[] mHighSpeedVideoConfigurations;
-    ReprocessFormatsMap mInputOutputFormatsMap;
-
-    boolean mListHighResolution;
 }
