@@ -1,7 +1,6 @@
 package com.z.zz.zzz.antidetector.fakecamera;
 
 import android.graphics.Rect;
-import android.hardware.camera2.CameraCharacteristics;
 import android.util.Log;
 import android.util.Range;
 import android.util.Rational;
